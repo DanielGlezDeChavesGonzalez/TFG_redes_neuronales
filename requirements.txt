@@ -1,0 +1,7 @@
+black
+click
+loguru
+pandas
+psycopg2
+sqlalchemy
+matplotlib
