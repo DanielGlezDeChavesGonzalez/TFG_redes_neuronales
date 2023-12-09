@@ -1,4 +1,4 @@
-*.png
-*.csv
-*.txt
-*.sql
+**.png
+**.csv
+**.txt
+**.sql
