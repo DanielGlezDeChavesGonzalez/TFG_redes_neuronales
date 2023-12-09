@@ -1,0 +1,14 @@
+FROM python:latest
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# CMD ["python", "ejemplo_generar_datos.py", "200", "--gap-percentage", "15", "--trend", "none", "--smoothing", "10", "--plot-file", "datos.png", "--seed", "123", "--log-to-file"]
+
+CMD ["python", "ejemplo_csv2db.py", "time_series.csv", "postgresql", "datos_temporales", "Datos1", "--host", "postgres", "--port", "5432", "--user", "postgres", "--password", "postgres"]
+

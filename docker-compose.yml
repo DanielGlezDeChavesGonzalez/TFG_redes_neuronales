@@ -1,14 +1,19 @@
-version: "3.9"
+version: "3"
 services:
   python:
     image: python:latest
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.python
     links:
       - postgres
     ports:
       - 8000:8000
   postgres:
     image: postgres:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile.postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
