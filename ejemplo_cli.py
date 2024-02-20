@@ -39,25 +39,24 @@ def transformations(data_array: Any) -> Any:
     
     return data_array
 
-def normalize(data_array : Any) -> Any:
+def normalize_second_column (data_array : Any ) :
     
-    # Normalize the data
-    data_array = [data.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x))) for data in data_array]
+    # Normalize the data of the second column using numpy
     
+    for data in data_array:
+        data[1] = (data[1] - np.min(data[1])) / (np.max(data[1]) - np.min(data[1]))
+        
     return data_array
 
-def unnormalize(data_array : Any) -> Any:
+def unnormalize_second_column (data_array : Any) :
         
-    # Unnormalize the data
-    data_array = [data.apply(lambda x: (x * (np.max(x) - np.min(x))) + np.min(x)) for data in data_array]
+    for data in data_array:
+        data[1] = (data[1] * (np.max(data[1]) - np.min(data[1]))) + np.min(data[1])
         
     return data_array
 
 def aumented_data(data_array: Any) -> Any:
-        
-    # Aumented data
-    data_array = [data.append(data.rolling(window=7, min_periods=1).mean()) for data in data_array]
-        
+    
     return data_array
     
 def write_file(data_array: Any, folder_to_write: str) -> None:
@@ -65,8 +64,10 @@ def write_file(data_array: Any, folder_to_write: str) -> None:
     if not os.path.exists(folder_to_write):
         os.makedirs(folder_to_write)
         
+    # Write the data to the folder without the name of the column from the dataframe
     for i in range(len(data_array)):
-        data_array[i].to_csv(folder_to_write + "/file_" + str(i) + ".csv", sep=';', index=False)
+        print ("escribiendo archivo: " + folder_to_write + "/file" + str(i) + ".csv")
+        data_array[i].to_csv(folder_to_write + "/file" + str(i) + ".csv", header=False, index=False, sep=';')
         
     return None
 
@@ -82,18 +83,15 @@ def main(folder_to_read: str, folder_to_write: str) -> None:
     print ("archivos: " + str(len(data)))
         
     clean_data = cleaning(data)
+    write_file(clean_data, folder_to_write + "/cleaned")
         
     transformations_data = transformations(clean_data)
-    
     write_file(transformations_data, folder_to_write + "/transformed")
     
-    normalize_data = normalize(transformations_data)
-    
+    normalize_data = normalize_second_column(transformations_data)
     write_file(normalize_data, folder_to_write + "/normalized")
 
-    unnormalize_data = unnormalize(normalize_data)
-    
-    write_file(unnormalize_data, folder_to_write + "/unnormalized")
+
     
     return None
 
