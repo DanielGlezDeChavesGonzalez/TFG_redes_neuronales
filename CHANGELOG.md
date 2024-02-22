@@ -52,3 +52,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Dockerfile.python changed cmd prompt to container not shutdown after run the application.
+
+## [1.0.4] - 2024-02-20
+
+### Fixed
+
+- ejemplo_cli.py fixed the error when the user wants the data to be read from a file or a folder of csv files. Also fixed the way of processing the data to avoid errors.
+
+### Changed
+
+- ejemplo_cli.py changed the way of normalizing the data and the way of saving the data using the pandas library instead of the basic use of os library.
+
+## [1.0.4] - 2024-02-22
+
+### Changed
+
+- ejemplo_cli.py added new functionality to the application. Like basic transformations of the data and the possibility to save the data in a file. Also added the possibility to change the parameters of the operations made in the data.
