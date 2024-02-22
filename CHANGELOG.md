@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.4] - 2024-02-22
 
+### Added
+
+- Dockerfile.redis to create a Docker image for the redis database.
+
 ### Changed
 
 - ejemplo_cli.py added new functionality to the application. Like basic transformations of the data and the possibility to save the data in a file. Also added the possibility to change the parameters of the operations made in the data.
+- docker-compose.yml added the redis container to the application.
