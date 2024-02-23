@@ -6,6 +6,7 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+import redis
 
 def read_folder_file(folder_or_file_data: str, headers:bool, separator) -> Any:
 
@@ -115,6 +116,24 @@ def write_file(data_array: Any, folder_to_write: str, headers: bool, separator:s
     return None
 
 
+def save_in_redis_db (data_array: Any, db_name: str, headers: bool, separator:str, folder_to_write: str) -> None:
+    
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    
+    if headers:
+        # Write the data to the folder with the name of the column from the dataframe
+        for i in range(len(data_array)):
+            print ("escribiendo archivo: " + folder_to_write + "/file" + str(i) + ".csv")
+            r.set("file" + str(i), data_array[i].to_csv(index=False, sep=separator))
+    else:
+        # Write the data to the folder without the name of the column from the dataframe
+        for i in range(len(data_array)):
+            print ("escribiendo archivo: " + folder_to_write + "/file" + str(i) + ".csv")
+            r.set("file" + str(i), data_array[i].to_csv(header=False, index=False, sep=separator))
+            
+    return None
+
+
 @click.command()
 @click.argument('folder_or_file_data', type=str)
 @click.argument('folder_to_write', type=str)
@@ -176,6 +195,9 @@ def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separato
         i+=1
     plt.show()
     
+    db_name = "redis"
+    
+    save_in_redis_db(data_modified, db_name, headers, separator, folder_to_write)    
 
     
     return None

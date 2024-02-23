@@ -13,3 +13,4 @@ COPY . .
 # CMD ["python", "ejemplo_csv2db.py", "time_series.csv", "postgresql", "datos_temporales", "Datos1", "--host", "postgres", "--port", "5432", "--user", "postgres", "--password", "postgres"]
 
 CMD ["sh", "-c", "python ejemplo_csv2db.py time_series.csv postgresql datos_temporales Datos1 --host postgres --port 5432 --user postgres --password postgres && while true; do sleep 1; done"]
+
