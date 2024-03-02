@@ -22,18 +22,5 @@ services:
       - 5432:5432
     volumes:
       - postgres-data:/var/lib/postgresql/data
-  redis:
-    image: redis:latest
-    container_name: redis
-    restart: always
-    # build: 
-    #   context: .
-    #   dockerfile: Dockerfile.redis
-    ports:
-      - 6379:6379
-    # volumes:
-    #   - redis-data:/data
-    command: redis-server --loglevel warning --requirepass password
 volumes:
   postgres-data:
-  # redis-data:

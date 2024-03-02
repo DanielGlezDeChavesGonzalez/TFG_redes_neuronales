@@ -12,5 +12,19 @@ COPY . .
 
 # CMD ["python", "ejemplo_csv2db.py", "time_series.csv", "postgresql", "datos_temporales", "Datos1", "--host", "postgres", "--port", "5432", "--user", "postgres", "--password", "postgres"]
 
-CMD ["sh", "-c", "python ejemplo_csv2db.py time_series.csv postgresql datos_temporales Datos1 --host postgres --port 5432 --user postgres --password postgres && while true; do sleep 1; done"]
+# CMD ["sh", "-c", "python ejemplo_csv2db.py time_series.csv postgresql datos_temporales Datos1 --host postgres --port 5432 --user postgres --password postgres && while true; do sleep 1; done"]
 
+# @click.argument('folder_or_file_data', type=str)
+# @click.argument('folder_to_write', type=str)
+# @click.option('--headers', type=bool, default=True, help="Input include headers.")
+# @click.option('--separator', type=str, default=';', help="Separator of the data.")
+# @click.option('--jitter', is_flag=True, help="Add jitter to the data.")
+# @click.option('--normalize', is_flag=True, help="Normalize the data.")
+# @click.option('--permutation', is_flag=True, help="Permute the data.")
+# @click.option('--magnitude-warp', is_flag=True, help="Magnitude warp the data.")
+# @click.option('--log-to-file', is_flag=False, help="Enable logging to a file instead of the console.")
+# @click.option('--log-level', default='INFO', type=str, help="Set the logging level (e.g., INFO, ERROR).")
+
+# def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separator :str, jitter: bool, normalize : bool, permutation :bool, magnitude_warp: bool , log_to_file: bool, log_level: str) -> None:
+
+CMD ["python", "app.py", "datos_sensores_prueba", "datos_fix2", "--headers", "False", "--separator", ";"]
