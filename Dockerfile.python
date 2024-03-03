@@ -27,4 +27,8 @@ COPY . .
 
 # def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separator :str, jitter: bool, normalize : bool, permutation :bool, magnitude_warp: bool , log_to_file: bool, log_level: str) -> None:
 
-CMD ["python", "app.py", "datos_sensores_prueba", "datos_fix2", "--headers", "False", "--separator", ";"]
+## do not let it close the container
+
+CMD ["sh", "-c", "python app.py datos_sensores_prueba datos_fix2 --headers False --separator ';' --columns 2 && while true; do sleep 1; done"]
+
+# python app.py datos_sensores_prueba datos_fix2 --headers False --separator ";"

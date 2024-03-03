@@ -165,6 +165,7 @@ def load_csv_to_db(csv_file: str, db_uri: str, table_name: str) -> None:
         engine = create_engine(db_uri)
         with engine.connect() as conn:
             df.to_sql(table_name, conn, if_exists='replace', index=False)
+            print(f"CSV data from '{csv_file}' successfully loaded into table '{table_name}' in database.")
             logger.info(f"CSV data from '{csv_file}' successfully loaded into table '{table_name}' in database.")
     except Exception as e:
         logger.error(f"Error loading data: {e}")
@@ -181,16 +182,17 @@ def load_csv_to_db(csv_file: str, db_uri: str, table_name: str) -> None:
 @click.option('--magnitude-warp', is_flag=True, help="Magnitude warp the data.")
 @click.option('--log-to-file', is_flag=False, help="Enable logging to a file instead of the console.")
 @click.option('--log-level', default='INFO', type=str, help="Set the logging level (e.g., INFO, ERROR).")
+@click.option('--columns', default=2, type=int, help="Columns to use. Ej: 2 -> 0,1")
 
-def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separator :str, jitter: bool, normalize : bool, permutation :bool, magnitude_warp: bool , log_to_file: bool, log_level: str) -> None:
+def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separator :str, jitter: bool, normalize : bool, permutation :bool, magnitude_warp: bool , log_to_file: bool, log_level: str, columns : int) -> None:
 
     data = read_folder_file(folder_or_file_data, headers, separator)
     
-    # remove the last column of the files
+    # remove the columns that are not going to be used in the file Ej: 0,1 -> 2
+    
+    data_modified = []
     for i in range(len(data)):
-        data[i] = data[i].iloc[:, :-1]
-            
-    data_modified = data
+        data_modified.append(data[i].iloc[:, :columns])
     
     print ("archivos: " + str(len(data)))
         
@@ -229,10 +231,12 @@ def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separato
     
     setup_logger(log_to_file, log_level)
 
-    db_uri = build_db_uri(folder_to_write, "localhost", "5432", "postgres", "postgres")
+    # db_uri = build_db_uri("datos_temporales", "localhost", "5432", "postgres", "postgres")
+    db_uri = build_db_uri("datos_temporales", "postgres", "5432", "postgres", "postgres")
 
     try:
         
+        print("Creating tables in PostgreSQL.")
         ## Obtain the name of all the files in the folder to load them up to the database
         for filename in os.listdir(folder_to_write + "/final"):
             csv_file = os.path.join(folder_to_write + "/final", filename)
@@ -250,11 +254,6 @@ def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separato
     #     plt.plot(data[0], data[1])
     #     i+=1
     # plt.show()
-    
-    # Seaborn graph representation
-    for data in data_modified:
-        sns.lineplot(data=data)
-    plt.show()
     
     return None
 

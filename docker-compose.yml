@@ -9,6 +9,8 @@ services:
       - postgres
     ports:
       - 8000:8000
+    depends_on:
+      - postgres
   postgres:
     image: postgres:latest
     build: 
