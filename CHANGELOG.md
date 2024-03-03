@@ -74,4 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ejemplo_cli.py added new functionality to the application. Like basic transformations of the data and the possibility to save the data in a file. Also added the possibility to change the parameters of the operations made in the data.
 - docker-compose.yml added the redis container to the application.
 
-## [1.0.5] - 2024-02-24
+## [1.0.5] - 2024-03-03
+
+### Added
+- app.py can now successfully connect to the database and load the data from the csv file.
