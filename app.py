@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 import seaborn as sns
+from scipy import stats
 
 def read_folder_file(folder_or_file_data: str, headers:bool, separator) -> Any:
 
@@ -57,42 +58,52 @@ def cleaning(data_array : Any , headers:bool) -> Any:
         
     ## Remove empty strings
     data_array = [data.replace(r'^\s*$', np.nan, regex=True) for data in data_array]
+    
+    ## Remove outliers from the second column until last using the z-score method
+    data_array = [data[(np.abs(stats.zscore(data)) < 3).all(axis=1)] for data in data_array]
+
 
     return data_array
 
-def transformations(data_array: Any , headers:bool) -> Any:
+def transformations(data_array: Any , headers:bool, columns: int) -> Any:
     
     for data in data_array:
-        # Convert the second column to float
-        data[1] = pd.to_numeric(data[1], errors='coerce')
+        
+        # Convert the second column  until last to float
+        for i in range(columns):
+            data[i] = pd.to_numeric(data[i], errors='coerce')
         
         # Replace Nan values with the mean of the 3 values before and after the Nan value
-        data[1] = data[1].fillna(data[1].rolling(3, min_periods=1).mean())
-         
+        for i in range(columns):
+            data[i] = data[i].fillna(data[i].rolling(3, min_periods=1).mean())
+        
     return data_array
 
-def normalization(data_array : Any , headers:bool) :
+def normalization(data_array : Any , headers:bool, columns : int) :
     
     # Normalize the data of the second column using numpy
     
     for data in data_array:
-        
-        data[1] = (data[1] - np.min(data[1])) / (np.max(data[1]) - np.min(data[1]))
-        
+        for i in range(columns):
+            data[i] = (data[i] - np.min(data[i])) / (np.max(data[i]) - np.min(data[i]))
+                    
     return data_array
 
-def aumented_data(data_array: Any, parameters: str, headers:bool) -> Any:
+def aumented_data(data_array: Any, parameters: str, headers:bool, columns : int) -> Any:
         
     match parameters:
         case "jitter":
             for data in data_array:
-                data[1] = data[1] + np.random.normal(0, 0.1, len(data[1]))
+                for i in range(columns):
+                    data[i] = data[i] + np.random.normal(0, 0.1, len(data[i]))
         case "permutation":
             for data in data_array:
-                data[1] = np.random.permutation(data[1])
+                for i in range(columns):
+                    data[i] = np.random.permutation(data[i])
         case "magnitude_warp":
             for data in data_array:
-                data[1] = data[1] * np.random.uniform(0.5, 1.5)
+                for i in range(columns):
+                    data[i] = data[i] * np.random.uniform(0.5, 1.5)
         case _:
             print("Invalid parameter")
     
@@ -200,33 +211,42 @@ def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separato
     write_file(clean_data, folder_to_write + "/cleaned", headers, separator)
     data_modified = clean_data
         
-    transformations_data = transformations(data_modified, headers)
+    transformations_data = transformations(data_modified, headers, columns)
     write_file(transformations_data, folder_to_write + "/transformed", headers, separator)
     data_modified = transformations_data
     
     if normalize:
-        normalize_data = normalization(normalize_data, headers)
+        normalize_data = normalization(normalize_data, headers, columns)
         write_file(normalize_data, folder_to_write + "/normalized", headers, separator)
         data_modified = normalize_data
         
     if jitter:
-        jitter_data = aumented_data(data_modified, "jitter", headers)
+        jitter_data = aumented_data(data_modified, "jitter", headers, columns)
         write_file(jitter_data, folder_to_write + "/jitter", headers, separator)
         data_modified = jitter_data
     
     if permutation:
-        permutation_data = aumented_data(normalize_data, "permutation", headers)
+        permutation_data = aumented_data(normalize_data, "permutation", headers, columns)
         write_file(permutation_data, folder_to_write + "/permutation", headers, separator)
         data_modified = permutation_data
         
     if magnitude_warp:
-        magnitude_warp_data = aumented_data(normalize_data, "magnitude_warp", headers)
+        magnitude_warp_data = aumented_data(normalize_data, "magnitude_warp", headers, columns)
         write_file(magnitude_warp_data, folder_to_write + "/magnitude_warp", headers, separator)
         data_modified = magnitude_warp_data
         
     write_file(data_modified, folder_to_write + "/final", headers, separator)
 
-
+    ## represent 1 graph by each file and in a the graph the column 1 y axis, column 0 x axis
+    i = 0
+    for data in data_modified:
+        plt.plot(data[0], data[1])
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('File ' + str(i))
+        i = i + 1
+        plt.show()
+    
     ## Write the data to a database in postgresql through the docker container
     
     setup_logger(log_to_file, log_level)
@@ -246,14 +266,7 @@ def main(folder_or_file_data: str, folder_to_write: str, headers: bool, separato
             
     except Exception as e:
         click.echo(e)
-    ## represent the data in a graph
-    # i = 0
-    # for data in data_modified:
-        
-    #     print ("graficando archivo: " + folder_to_write + "/final/file" + str(i) + ".csv")
-    #     plt.plot(data[0], data[1])
-    #     i+=1
-    # plt.show()
+
     
     return None
 

@@ -78,3 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - app.py can now successfully connect to the database and load the data from the csv file.
+
+## [1.0.6] - 2024-03-05
+
+### Changed
+- app.py added the elimination of outliers in the data.
