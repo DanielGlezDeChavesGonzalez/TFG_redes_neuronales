@@ -8,3 +8,10 @@ matplotlib
 numpy
 seaborn
 statsmodels
+psycopg2
+numpy
+tensorflow
+arch.unitroot
+typing
+scipy
+os
