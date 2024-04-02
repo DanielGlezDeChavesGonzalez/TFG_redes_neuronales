@@ -88,3 +88,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added 
 - loadandprep.py created file to load and prepare the data.
+
+## [1.0.8] - 2024-04-02
+
+### Changed
+- loadandprep.py added the stacionary_and_correlation analysis function to the data loaded.
+- loadandprep.py added the create_npz function to the data loaded.
+- loadandprep.py added the augmentation_operations function to the npz files.
+- loadandprep.py added the data_generator_npz function to the npz files.
