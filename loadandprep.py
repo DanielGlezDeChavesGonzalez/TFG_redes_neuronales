@@ -14,6 +14,8 @@ from sqlalchemy import create_engine
 import seaborn as sns
 from scipy import stats
 import os
+import IPython
+import IPython.display
 
 # Database connection parameters
 dbname = "datos_temporales"
@@ -233,6 +235,28 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         print("Data has been loaded and generated.")
         for data in dataset:
             print(data.head())
+            
+        lstm_model = tf.keras.models.Sequential([
+            tf.keras.layers.LSTM(128, return_sequences=True),
+            tf.keras.layers.Dense(1)
+        ])
+        # print('Input shape:', wide_window.example[0].shape)
+        # print('Output shape:', lstm_model(wide_window.example[0]).shape)
+        
+        history = lstm_model.compile_and_fit(dataset)
+        
+        plot = tf.keras.utils.plot_model(lstm_model, show_shapes=True)
+        
+        IPython.display.Image(plot)
+        
+        # IPython.display.clear_output()
+        # val_performance = {}
+        # performance = {}
+        # val_performance['LSTM'] = lstm_model.evaluate(dataset)
+        # performance['LSTM'] = lstm_model.evaluate(dataset)
+        # IPython.display.clear_output()
+        
+
         
     else:
         print("Invalid operation. Please choose one of the following: 'stacionary_and_correlation', 'npz_creation', 'load_and_generate_data'")
