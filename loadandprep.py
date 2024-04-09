@@ -236,6 +236,20 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         for data in dataset:
             print(data.head())
             
+        conv_model = tf.keras.models.Sequential([
+            tf.keras.layers.Conv1D(filters=32, kernel_size=5, activation='relu'),
+            tf.keras.layers.Dense(units=32, activation='relu'),
+            tf.keras.layers.Dense(1)
+        ])
+        
+        
+        history = conv_model.compile_and_fit(conv_model)
+        
+        plot = tf.keras.utils.plot_model(conv_model, show_shapes=True)
+        
+        IPython.display.Image(plot)
+        
+            
         lstm_model = tf.keras.models.Sequential([
             tf.keras.layers.LSTM(128, return_sequences=True),
             tf.keras.layers.Dense(1)
@@ -247,15 +261,27 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         
         plot = tf.keras.utils.plot_model(lstm_model, show_shapes=True)
         
+        IPython.display.clear_output()
+        
         IPython.display.Image(plot)
         
-        # IPython.display.clear_output()
+        # compara el rendimiento de los modelos
+        
         # val_performance = {}
         # performance = {}
+        # val_performance['Conv'] = conv_model.evaluate(dataset)
+        # performance['Conv'] = conv_model.evaluate(dataset)
+        
         # val_performance['LSTM'] = lstm_model.evaluate(dataset)
         # performance['LSTM'] = lstm_model.evaluate(dataset)
+        
         # IPython.display.clear_output()
         
+        # for name, value in performance.items():
+        #     print(f'{name:12s}: {value[1]:0.4f}')
+        # print()
+        
+    
 
         
     else:
