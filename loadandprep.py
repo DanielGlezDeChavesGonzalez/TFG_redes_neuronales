@@ -67,16 +67,15 @@ def load_data_from_database ():
 
 
 # augmented dickey fuller test represented with graphs with plt
-def adf_test(data: pd.Series, folder: str) -> None:
-    print("ADF Test")
-    for df, file in zip(data, os.listdir(folder)):
+def adf_test(data: pd.Series) -> None:
+    print("ADF Test-----------------------------------------")
+    for df in data:
         values = df['Value']
         
         # Realizar la prueba de Dickey-Fuller en la columna 'Value'
         result = adfuller(values)
         
         # Imprimir los resultados
-        print('DataFrame: ' + file)
         print(df.head())
         print(f'ADF Statistic: {result[0]}')
         print(f'p-value: {result[1]}')
@@ -85,16 +84,15 @@ def adf_test(data: pd.Series, folder: str) -> None:
             print(f'\t{key}: {value}')
 
 # Kwiatkowski-Phillips-Schmidt-Shin test represented with graphs with plt
-def kpss_test(data: pd.Series, folder : str) -> None:
-    print("KPSS Test")
-    for df, file in zip(data, os.listdir(folder)):
+def kpss_test(data: pd.Series) -> None:
+    print("KPSS Test-----------------------------------------")
+    for df in data:
         values = df['Value']
         
         # Realizar la prueba de KPSS en la columna 'Value'
         result = kpss(values)
         
         # Imprimir los resultados
-        print('DataFrame: ' + file)
         print(df.head())
         print(f'KPSS Statistic: {result[0]}')
         print(f'p-value: {result[1]}')
@@ -104,20 +102,20 @@ def kpss_test(data: pd.Series, folder : str) -> None:
         
 
 # Autocorrelation and Partial Autocorrelation Function represented with graphs with plt
-def acf_pacf(data: pd.Series, folder : str) -> None:
-    print("ACF and PACF")
-    for df, file in zip(data, os.listdir(folder)):
+def acf_pacf(data: pd.Series) -> None:
+    print("ACF and PACF-----------------------------------------")
+    for df in data:
         values = df['Value']
         # Crear una figura con un panel dividido en 1 fila y 2 columnas
         plt.figure(figsize=(12, 5))
         # Gráfico de la función de autocorrelación
         plt.subplot(2, 1, 1)
         plot_acf(values, ax=plt.gca())
-        plt.title(f'ACF - {file}')
+        plt.title(f'ACF')
         # Gráfico de la función de autocorrelación parcial
         plt.subplot(2, 1, 2)
         plot_pacf(values, ax=plt.gca())
-        plt.title(f'PACF - {file}')
+        plt.title(f'PACF')
         # Ajustar los gráficos
         plt.subplots_adjust(hspace=0.5)
         # Mostrar los gráficos
@@ -125,16 +123,15 @@ def acf_pacf(data: pd.Series, folder : str) -> None:
 
 
 # Phillips-Perron test represented with graphs with plt
-def pp_test(data: pd.Series, folder : str) -> None:
-    print("PP Test")
-    for df, file in zip(data, os.listdir(folder)):
+def pp_test(data: pd.Series) -> None:
+    print("PP Test-----------------------------------------")
+    for df in data:
         values = df['Value']
         
         # Realizar la prueba de Phillips-Perron en la columna 'Value'
         result = PhillipsPerron(values)
         
         # Imprimir los resultados
-        print('DataFrame: ' + file)
         print(f'PP Statistic: {result.stat}')
         print(f'p-value: {result.pvalue}')
         print(f'Critical Values: {result.critical_values}')
@@ -154,6 +151,8 @@ def create_npz(data, filename, folder_save ):
     print(f"Data will be saved in {filename}")
     timestamps = data['Timestamp']
     values = data['Value']
+    if not os.path.exists(folder_save):
+        os.makedirs(folder_save)
     np.savez(os.path.join(folder_save, filename), Timestamp=timestamps, Value=values)
     print(f"Data has been successfully saved in {filename}")
     
@@ -206,44 +205,55 @@ def data_generator_npz(file_paths, batch_size, augmentations=[]):
 
 def main(operation: str , folder_read : str, folder_save: str) -> None:
     
-    if folder_read:
-        logger.info(f"Data will be loaded from {folder_read}")
-        data = load_data_from_folder(folder_read)
-    else:
-        logger.info(f"Data will be loaded from the database")
-        data = load_data_from_database()
+    if operation != 'load_and_generate_data':
+        if folder_read:
+            # python .\loadandprep.py operation --folder-read .\datos_sensores_prueba\
+            logger.info(f"Data will be loaded from {folder_read}")
+            data = load_data_from_folder(folder_read)
+        else:
+            # python .\loadandprep.py stacionary_and_correlation
+            logger.info(f"Data will be loaded from the database")
+            data = load_data_from_database()
 
     if operation == 'stacionary_and_correlation':
-        adf_test(data, folder_read)
-        kpss_test(data, folder_read)
-        acf_pacf(data, folder_read)
-        pp_test(data, folder_read)
+        # python .\loadandprep.py stacionary_and_correlation --folder-read .\datos_sensores\
+        for df, file in zip(data, os.listdir(folder_read)):
+            print(f"Data from file {file}")
+            adf_test(df)
+            kpss_test(df)
+            acf_pacf(df)
+            pp_test(df)
         
     elif operation == 'npz_creation':
+        # python .\loadandprep.py npz_creation --folder-read .\datos_sensores_prueba\ --folder-save datos_npz
         chunk_size = 10000
-        sliced_data = slice_data(data, chunk_size)
+        unified_data = pd.concat(data)
+        # sliced_data = slice_data(data, chunk_size)
+        sliced_data = slice_data(unified_data, chunk_size)
         for idx, chunk in enumerate(sliced_data):
             npz_filename = f'data_chunk_{idx}.npz'
             create_npz(chunk, npz_filename, folder_save)
         print("Data has been successfully saved in NPZ format.")
         
     elif operation == 'load_and_generate_data':
+        # python .\loadandprep.py load_and_generate_data --folder-read datos_npz
         file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
         batch_size = 64
-        augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
+        # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
+        augmentations = ['add_noise']
+        print("Data will be loaded and generated.")
         dataset = data_generator_npz(file_paths, batch_size, augmentations)
-        print("Data has been loaded and generated.")
         for data in dataset:
             print(data.head())
             
+        print("Data has been loaded and generated.")
         conv_model = tf.keras.models.Sequential([
             tf.keras.layers.Conv1D(filters=32, kernel_size=5, activation='relu'),
             tf.keras.layers.Dense(units=32, activation='relu'),
             tf.keras.layers.Dense(1)
         ])
         
-        
-        history = conv_model.compile_and_fit(conv_model)
+        conv_model.compile_and_fit(dataset)
         
         plot = tf.keras.utils.plot_model(conv_model, show_shapes=True)
         
@@ -257,7 +267,7 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         # print('Input shape:', wide_window.example[0].shape)
         # print('Output shape:', lstm_model(wide_window.example[0]).shape)
         
-        history = lstm_model.compile_and_fit(dataset)
+        lstm_model.compile_and_fit(dataset)
         
         plot = tf.keras.utils.plot_model(lstm_model, show_shapes=True)
         
