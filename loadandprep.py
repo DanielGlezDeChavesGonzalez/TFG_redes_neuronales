@@ -69,74 +69,68 @@ def load_data_from_database ():
 # augmented dickey fuller test represented with graphs with plt
 def adf_test(data: pd.Series) -> None:
     print("ADF Test-----------------------------------------")
-    for df in data:
-        values = df['Value']
-        
-        # Realizar la prueba de Dickey-Fuller en la columna 'Value'
-        result = adfuller(values)
-        
-        # Imprimir los resultados
-        print(df.head())
-        print(f'ADF Statistic: {result[0]}')
-        print(f'p-value: {result[1]}')
-        print('Critical Values:')
-        for key, value in result[4].items():
-            print(f'\t{key}: {value}')
+    values = data['Value']
+    
+    # Realizar la prueba de Dickey-Fuller en la columna 'Value'
+    result = adfuller(values)
+    
+    # Imprimir los resultados
+    print(f'ADF Statistic: {result[0]}')
+    print(f'p-value: {result[1]}')
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print(f'\t{key}: {value}')
 
 # Kwiatkowski-Phillips-Schmidt-Shin test represented with graphs with plt
 def kpss_test(data: pd.Series) -> None:
     print("KPSS Test-----------------------------------------")
-    for df in data:
-        values = df['Value']
-        
-        # Realizar la prueba de KPSS en la columna 'Value'
-        result = kpss(values)
-        
-        # Imprimir los resultados
-        print(df.head())
-        print(f'KPSS Statistic: {result[0]}')
-        print(f'p-value: {result[1]}')
-        print('Critical Values:')
-        for key, value in result[3].items():
-            print(f'\t{key}: {value}')
+    values = data['Value']
+    
+    # Realizar la prueba de KPSS en la columna 'Value'
+    result = kpss(values)
+    
+    # Imprimir los resultados
+    print(f'KPSS Statistic: {result[0]}')
+    print(f'p-value: {result[1]}')
+    print('Critical Values:')
+    for key, value in result[3].items():
+        print(f'\t{key}: {value}')
         
 
 # Autocorrelation and Partial Autocorrelation Function represented with graphs with plt
 def acf_pacf(data: pd.Series) -> None:
     print("ACF and PACF-----------------------------------------")
-    for df in data:
-        values = df['Value']
-        # Crear una figura con un panel dividido en 1 fila y 2 columnas
-        plt.figure(figsize=(12, 5))
-        # Gráfico de la función de autocorrelación
-        plt.subplot(2, 1, 1)
-        plot_acf(values, ax=plt.gca())
-        plt.title(f'ACF')
-        # Gráfico de la función de autocorrelación parcial
-        plt.subplot(2, 1, 2)
-        plot_pacf(values, ax=plt.gca())
-        plt.title(f'PACF')
-        # Ajustar los gráficos
-        plt.subplots_adjust(hspace=0.5)
-        # Mostrar los gráficos
-        plt.show()
+    values = data['Value']
+    # Crear una figura con un panel dividido en 1 fila y 2 columnas
+    plt.figure(figsize=(12, 5))
+    # Gráfico de la función de autocorrelación
+    plt.subplot(2, 1, 1)
+    plot_acf(values, ax=plt.gca())
+    plt.title(f'ACF')
+    # Gráfico de la función de autocorrelación parcial
+    plt.subplot(2, 1, 2)
+    plot_pacf(values, ax=plt.gca())
+    plt.title(f'PACF')
+    # Ajustar los gráficos
+    plt.subplots_adjust(hspace=0.5)
+    # Mostrar los gráficos
+    plt.show()
 
 
 # Phillips-Perron test represented with graphs with plt
 def pp_test(data: pd.Series) -> None:
     print("PP Test-----------------------------------------")
-    for df in data:
-        values = df['Value']
-        
-        # Realizar la prueba de Phillips-Perron en la columna 'Value'
-        result = PhillipsPerron(values)
-        
-        # Imprimir los resultados
-        print(f'PP Statistic: {result.stat}')
-        print(f'p-value: {result.pvalue}')
-        print(f'Critical Values: {result.critical_values}')
-        print(f'Null Hypothesis: {result.null_hypothesis}')
-        print(f'Alternative Hypothesis: {result.alternative_hypothesis}')
+    values = data['Value']
+    
+    # Realizar la prueba de Phillips-Perron en la columna 'Value'
+    result = PhillipsPerron(values)
+    
+    # Imprimir los resultados
+    print(f'PP Statistic: {result.stat}')
+    print(f'p-value: {result.pvalue}')
+    print(f'Critical Values: {result.critical_values}')
+    print(f'Null Hypothesis: {result.null_hypothesis}')
+    print(f'Alternative Hypothesis: {result.alternative_hypothesis}')
 
             
     return None
@@ -218,10 +212,16 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
     if operation == 'stacionary_and_correlation':
         # python .\loadandprep.py stacionary_and_correlation --folder-read .\datos_sensores\
         for df, file in zip(data, os.listdir(folder_read)):
-            print(f"Data from file {file}")
+            print(f"Data analize from file {file}")
+            # chunks = slice_data(df, 10000)
+            # for chunk in chunks:
+            #     adf_test(chunk)
+            #     kpss_test(chunk)
+            #     # acf_pacf(chunk)
+            #     pp_test(chunk)
             adf_test(df)
             kpss_test(df)
-            acf_pacf(df)
+            # acf_pacf(df)
             pp_test(df)
         
     elif operation == 'npz_creation':
