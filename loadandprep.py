@@ -152,8 +152,8 @@ def create_npz(data, filename, folder_save ):
     
 def read_data_from_npz(filename):
     with np.load(filename) as data:
-        return data['Timestamp'], data['Value']
-    
+        return data['timestamps'], data['values']
+     
 def augmentation_operations(data, augmentations):
     if 'normalize' in augmentations:
         data = (data - np.min(data)) / (np.max(data) - np.min(data))
@@ -184,8 +184,8 @@ def data_generator_npz(file_paths, batch_size, augmentations=[]):
     dataset = dataset.flat_map(lambda x: tf.data.Dataset.from_tensor_slices(read_data_from_npz(x)))
     
     # Apply data augmentation
-    dataset = dataset.map(lambda x, y: augmentation_operations(x, y, augmentations))
-    
+    dataset = dataset.map(lambda x,y : augmentation_operations(x, y, augmentations))
+
     # Batch the data
     dataset = dataset.batch(batch_size)
     
@@ -238,61 +238,76 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
     elif operation == 'load_and_generate_data':
         # python .\loadandprep.py load_and_generate_data --folder-read datos_npz
         file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
+        print (file_paths)
         batch_size = 64
         # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
         augmentations = ['add_noise']
         print("Data will be loaded and generated.")
         dataset = data_generator_npz(file_paths, batch_size, augmentations)
-        for data in dataset:
-            print(data.head())
-            
+        # for data in dataset:
+        #     print(data.head())
+        
         print("Data has been loaded and generated.")
-        conv_model = tf.keras.models.Sequential([
-            tf.keras.layers.Conv1D(filters=32, kernel_size=5, activation='relu'),
+                
+        # data_train is the first 85% of the data
+        data_train = dataset.take(int(0.85 * len(dataset)))
+        
+        # data_test is the last 15% of the data    
+        data_test = dataset.skip(int(0.85 * len(dataset)))
+        
+        # Two models are created one convolutional and one recurrent (LSTM)
+        # The models are trained with the training data and evaluated with the test data
+        # The model with the best performance is selected
+        # The model is saved
+        # The model is used to predict the next value of the time series
+        
+        # conv_model = tf.keras.Sequential([
+        #     tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu'),
+        #     tf.keras.layers.MaxPooling1D(pool_size=2),
+        #     tf.keras.layers.Flatten(),
+        #     tf.keras.layers.Dense(50, activation='relu'),
+        #     tf.keras.layers.Dense(1)
+        # ])
+        conv_model = tf.keras.Sequential([
             tf.keras.layers.Dense(units=32, activation='relu'),
+            tf.keras.layers.Dense(units=1)
+        ])
+        
+        lstm_model = tf.keras.Sequential([
+            tf.keras.layers.LSTM(32, return_sequences=True),
             tf.keras.layers.Dense(1)
         ])
         
-        conv_model.compile_and_fit(dataset)
+        conv_model.compile(optimizer='adam', loss='mse')
+        lstm_model.compile(optimizer='adam', loss='mse')
         
-        plot = tf.keras.utils.plot_model(conv_model, show_shapes=True)
+        conv_model.fit(data_train, epochs=10)
+        lstm_model.fit(data_train, epochs=10)
         
-        IPython.display.Image(plot)
+        conv_loss = conv_model.evaluate(data_test)
+        lstm_loss = lstm_model.evaluate(data_test)
+        print(f"Convolutional model loss: {conv_loss}")
+        print(f"LSTM model loss: {lstm_loss}")
         
+        # Plot predictions of the models in same window 
+        plt.figure(figsize=(12, 6))
+        plt.plot(data_test, label='True data')
+        plt.plot(conv_model.predict(data_test), label='Convolutional model')
+        plt.plot(lstm_model.predict(data_test), label='LSTM model')
+        plt.legend()
+        plt.show()
+        
+        if conv_loss < lstm_loss:
+            model = conv_model
             
-        lstm_model = tf.keras.models.Sequential([
-            tf.keras.layers.LSTM(128, return_sequences=True),
-            tf.keras.layers.Dense(1)
-        ])
-        # print('Input shape:', wide_window.example[0].shape)
-        # print('Output shape:', lstm_model(wide_window.example[0]).shape)
+        print("Model " + model + " has been selected.")
         
-        lstm_model.compile_and_fit(dataset)
+        model.save('model.h5')
         
-        plot = tf.keras.utils.plot_model(lstm_model, show_shapes=True)
+        # Predict the next value of the time series
+        next_value = model.predict(data_test)
+        print(f"Next value of the time series: {next_value}")
         
-        IPython.display.clear_output()
-        
-        IPython.display.Image(plot)
-        
-        # compara el rendimiento de los modelos
-        
-        # val_performance = {}
-        # performance = {}
-        # val_performance['Conv'] = conv_model.evaluate(dataset)
-        # performance['Conv'] = conv_model.evaluate(dataset)
-        
-        # val_performance['LSTM'] = lstm_model.evaluate(dataset)
-        # performance['LSTM'] = lstm_model.evaluate(dataset)
-        
-        # IPython.display.clear_output()
-        
-        # for name, value in performance.items():
-        #     print(f'{name:12s}: {value[1]:0.4f}')
-        # print()
-        
-    
-
         
     else:
         print("Invalid operation. Please choose one of the following: 'stacionary_and_correlation', 'npz_creation', 'load_and_generate_data'")

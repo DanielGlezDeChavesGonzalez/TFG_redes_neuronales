@@ -96,3 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - loadandprep.py added the create_npz function to the data loaded.
 - loadandprep.py added the augmentation_operations function to the npz files.
 - loadandprep.py added the data_generator_npz function to the npz files.
+
+## [1.0.9] - 2024-04-15
+
+### Added
+- loadandprep.py added the lstm and conv model and the compile_and_fit function.
