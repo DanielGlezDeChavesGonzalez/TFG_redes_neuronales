@@ -154,8 +154,8 @@ def read_data_from_npz(filename):
         
     print(f"redadass--------------------- {filename}")
     with np.load(filename) as data:
-        return data['timestamps'], data['values']
-    
+        print(f"Data has been successfully loaded from {filename}")
+        return data['Timestamp'], data['Value']
      
 def augmentation_operations(data, augmentations):
     if 'normalize' in augmentations:
@@ -184,8 +184,14 @@ def augmentation_operations(data, augmentations):
     
 def data_generator_npz(file_paths, batch_size, augmentations=[]):
     
-    dataset = tf.data.Dataset.from_tensor_slices(file_paths)
-    dataset = dataset.flat_map(lambda filename: tf.data.Dataset.from_tensor_slices(read_data_from_npz(filename)))
+    # dataset = tf.data.Dataset.from_tensor_slices(file_paths)
+    # dataset = dataset.flat_map(lambda filename: tf.data.Dataset.from_tensor_slices(read_data_from_npz(filename)))
+    dataset = tf.data.Dataset
+    
+    for file in file_paths:
+        timestamps, values = read_data_from_npz(file)
+        temp_dataset = tf.data.Dataset.from_tensor_slices((timestamps, values))
+        dataset = dataset.concatenate(temp_dataset)
     
     # Apply data augmentation
     dataset = dataset.map(lambda timestamps, values: (timestamps, augmentation_operations(values, augmentations)))
