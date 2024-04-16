@@ -151,8 +151,11 @@ def create_npz(data, filename, folder_save ):
     print(f"Data has been successfully saved in {filename}")
     
 def read_data_from_npz(filename):
+        
+    print(f"redadass--------------------- {filename}")
     with np.load(filename) as data:
         return data['timestamps'], data['values']
+    
      
 def augmentation_operations(data, augmentations):
     if 'normalize' in augmentations:
@@ -180,11 +183,12 @@ def augmentation_operations(data, augmentations):
     return data
     
 def data_generator_npz(file_paths, batch_size, augmentations=[]):
+    
     dataset = tf.data.Dataset.from_tensor_slices(file_paths)
-    dataset = dataset.flat_map(lambda x: tf.data.Dataset.from_tensor_slices(read_data_from_npz(x)))
+    dataset = dataset.flat_map(lambda filename: tf.data.Dataset.from_tensor_slices(read_data_from_npz(filename)))
     
     # Apply data augmentation
-    dataset = dataset.map(lambda x,y : augmentation_operations(x, y, augmentations))
+    dataset = dataset.map(lambda timestamps, values: (timestamps, augmentation_operations(values, augmentations)))
 
     # Batch the data
     dataset = dataset.batch(batch_size)
@@ -238,7 +242,7 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
     elif operation == 'load_and_generate_data':
         # python .\loadandprep.py load_and_generate_data --folder-read datos_npz
         file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
-        print (file_paths)
+        # print (file_paths)
         batch_size = 64
         # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
         augmentations = ['add_noise']
