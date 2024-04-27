@@ -183,18 +183,56 @@ def augmentation_operations(data, augmentations):
     
 def data_generator_npz(file_paths, batch_size, augmentations=[]):
     
-    all_timestamps = np.array([])
-    all_values = np.array([])
+    all_timestamps = []
+    all_values = []
+    
+    # The LSTM input layer must be 3D, dimensions are: samples, time steps, and features.
+
+    # Assuming read_data_from_npz returns lists
     for file in file_paths:
         timestamps, values = read_data_from_npz(file)
-        all_timestamps = np.concatenate((all_timestamps, timestamps))
-        all_values = np.concatenate((all_values, values))
-        
-    dataset = tf.data.Dataset.from_tensor_slices((all_timestamps, all_values))    
-    
-    # Apply data augmentation
-    dataset = dataset.map(lambda timestamps, values: (timestamps, augmentation_operations(values, augmentations)))
+        all_timestamps.extend(timestamps)
+        all_values.extend(values)
 
+    tuple_array = np.array(list(zip(all_timestamps, all_values)))
+    
+    # Apply augmentations
+    tuple_array = augmentation_operations(tuple_array, augmentations)
+    
+    # Split the data into samples of length 200
+        
+
+    samples = []
+    length = 200
+    for i in range(0, len(tuple_array), length):
+        samples.append(tuple_array[i:i+length])
+
+    print(f"Samples: {len(samples)}")
+    # for idx, sample in enumerate(samples):
+    #     print(f"Sample {idx}: Shape - {sample.shape}")
+
+    # print(f"Samples 1 : {samples[0]}")
+
+    last_sample_length = 200  # Length expected for each sample
+    last_sample = samples[-1]  # Get the last sample
+
+    if len(last_sample) < last_sample_length:
+        # Pad the last sample with zeros to match the expected length
+        padding_length = last_sample_length - len(last_sample)
+        padding = np.zeros((padding_length, 2))  # Assuming 2 columns
+        padded_last_sample = np.concatenate((last_sample, padding), axis=0)
+        samples[-1] = padded_last_sample
+
+    # Now convert samples to a NumPy array
+    data = np.array(samples)
+    
+    print (f"Data shape: {data.shape}")
+    
+    dataset = tf.data.Dataset.from_tensor_slices(data)
+    
+    # Apply augmentations
+    # dataset = dataset.map(lambda x: augmentation_operations(x, augmentations))
+    
     # Batch the data
     dataset = dataset.batch(batch_size)
     
@@ -262,7 +300,7 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         # data_test is the last 15% of the data    
         data_test = dataset.skip(int(0.85 * len(dataset)))
         
-        # print(data_test.batch(3).element_spec)
+        # print(dataset.batch(3).element_spec)
         
         # Two models are created one convolutional and one recurrent (LSTM)
         # The models are trained with the training data and evaluated with the test data
@@ -279,16 +317,21 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         
         # conv_model.compile(optimizer='adam', loss='mse')
         # conv_model.fit(data_train, epochs=10)
-        
+                
         lstm_model = tf.keras.Sequential([
-            tf.keras.layers.LSTM(32, return_sequences=True),
+            # tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1), input_shape=[None]),
+            tf.keras.layers.LSTM(32, input_shape=(200,2), return_sequences=True),
             tf.keras.layers.Dense(units=1)
         ])
+        
+        lstm_model.summary()
+        
+        # funcion perdida huber MIRAR
 
         lstm_model.compile(optimizer='adam', loss='mse')
         
         # ValueError: Input 0 of layer "lstm" is incompatible with the layer: expected ndim=3, found ndim=1. Full shape received: (None,)
-        lstm_model.fit(data_train, epochs=10)
+        lstm_model.fit(dataset, epochs=10)
         
         # conv_loss = conv_model.evaluate(data_test)
         # print(f"Convolutional model loss: {conv_loss}")
