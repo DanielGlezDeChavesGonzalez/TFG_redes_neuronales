@@ -273,6 +273,14 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         
         batch_size = 32
         trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, augmentations)
+        
+        print (f"TrainX shape: {trainX.shape}")
+        print (f"TrainY shape: {trainY.shape}")
+        print (f"TestX shape: {testX.shape}")
+        print (f"TestY shape: {testY.shape}")
+        
+        # data_train = tf.data.Dataset.from_tensor_slices((trainX, trainY))
+        # data_test = tf.data.Dataset.from_tensor_slices((testX, testY))        
                 
         # Two models are created one convolutional and one recurrent (LSTM)
         # The models are trained with the training data and evaluated with the test data
@@ -299,8 +307,13 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
             tf.keras.layers.Dense(units=1)
         ])
         
+        lstm_model.summary()
+        
         lstm_model.compile(optimizer='adam', loss='mse')
-        lstm_model.fit(trainX, trainY, epochs=10)
+        # needed shape -> samples, time steps, and features
+        lstm_model.fit(trainX, trainY, epochs=10, batch_size=32)
+        
+        # lstm_model.fit(data_train, epochs=10)
         
         plt.plot(lstm_model.history.history['loss'])
         plt.title('Model loss')
