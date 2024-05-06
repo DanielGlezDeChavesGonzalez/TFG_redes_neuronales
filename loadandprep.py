@@ -181,13 +181,12 @@ def augmentation_operations(data, augmentations):
         data = data[indices]
     return data
     
-def data_generator_npz(file_paths, batch_size, augmentations=[]):
+def dataset_generator(file_paths, batch_size, augmentations=[]):
     
     all_timestamps = []
     all_values = []
     
     # The LSTM input layer must be 3D, dimensions are: samples, time steps, and features.
-
     # Assuming read_data_from_npz returns lists
     for file in file_paths:
         timestamps, values = read_data_from_npz(file)
@@ -196,47 +195,30 @@ def data_generator_npz(file_paths, batch_size, augmentations=[]):
 
     tuple_array = np.array(list(zip(all_timestamps, all_values)))
     
-    # Apply augmentations
-    tuple_array = augmentation_operations(tuple_array, augmentations)
+    train_size = int(len(tuple_array) * 0.8)
+    train_data, test_data = tuple_array[:train_size], tuple_array[train_size:]
     
-    # Split the data into samples of length 200
+    trainX, trainY = [], []
+    for i in range(len(train_data) - batch_size):
+        trainX.append(train_data[i:i+batch_size, 1])
+        trainY.append(train_data[i+batch_size, 1])
         
-
-    samples = []
-    length = 200
-    for i in range(0, len(tuple_array), length):
-        samples.append(tuple_array[i:i+length])
-
-    print(f"Samples: {len(samples)}")
-    # for idx, sample in enumerate(samples):
-    #     print(f"Sample {idx}: Shape - {sample.shape}")
-
-    # print(f"Samples 1 : {samples[0]}")
-
-    last_sample_length = 200  # Length expected for each sample
-    last_sample = samples[-1]  # Get the last sample
-
-    if len(last_sample) < last_sample_length:
-        # Pad the last sample with zeros to match the expected length
-        padding_length = last_sample_length - len(last_sample)
-        padding = np.zeros((padding_length, 2))  # Assuming 2 columns
-        padded_last_sample = np.concatenate((last_sample, padding), axis=0)
-        samples[-1] = padded_last_sample
-
-    # Now convert samples to a NumPy array
-    data = np.array(samples)
+    testX, testY = [], []
+    for i in range(len(test_data) - batch_size):
+        testX.append(test_data[i:i+batch_size, 1])
+        testY.append(test_data[i+batch_size, 1])
+        
+    trainX = np.array(trainX)
+    trainY = np.array(trainY)
+    testX = np.array(testX)
+    testY = np.array(testY)
     
-    print (f"Data shape: {data.shape}")
+    # trainX = augmentation_operations(trainX, augmentations)
+    # trainY = augmentation_operations(trainY, augmentations)
+    # testX = augmentation_operations(testX, augmentations)
+    # testY = augmentation_operations(testY, augmentations)
     
-    dataset = tf.data.Dataset.from_tensor_slices(data)
-    
-    # Apply augmentations
-    # dataset = dataset.map(lambda x: augmentation_operations(x, augmentations))
-    
-    # Batch the data
-    dataset = dataset.batch(batch_size)
-    
-    return dataset
+    return trainX, trainY, testX, testY
 
     
 @click.command()
@@ -289,26 +271,15 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
         augmentations = ['add_noise']
         
-        batch_size = 64
-        dataset = data_generator_npz(file_paths, batch_size, augmentations)
-        
-        print("Data has been loaded and generated.")
+        batch_size = 32
+        trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, augmentations)
                 
-        # data_train is the first 85% of the data
-        data_train = dataset.take(int(0.85 * len(dataset)))
-                         
-        # data_test is the last 15% of the data    
-        data_test = dataset.skip(int(0.85 * len(dataset)))
-        
-        # print(dataset.batch(3).element_spec)
-        
         # Two models are created one convolutional and one recurrent (LSTM)
         # The models are trained with the training data and evaluated with the test data
         # The model with the best performance is selected
         # The model is saved
         # The model is used to predict the next value of the time series
         
-
         # conv_model = tf.keras.Sequential([
         #     tf.keras.layers.Conv1D(filters=32, kernel_size=3, activation='relu'),
         #     tf.keras.layers.Dense(units=32, activation='relu'),
@@ -318,46 +289,37 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         # conv_model.compile(optimizer='adam', loss='mse')
         # conv_model.fit(data_train, epochs=10)
                 
+        # conv_loss = conv_model.evaluate(data_test)
+        # print(f"Convolutional model loss: {conv_loss}")
+        
         lstm_model = tf.keras.Sequential([
-            # tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1), input_shape=[None]),
-            tf.keras.layers.LSTM(32, input_shape=(200,2), return_sequences=True),
+            tf.keras.layers.LSTM(units=50, return_sequences=True, input_shape=(batch_size, 1)),
+            tf.keras.layers.LSTM(units=50),
+            tf.keras.layers.Dense(units=8),
             tf.keras.layers.Dense(units=1)
         ])
         
-        lstm_model.summary()
-        
-        # funcion perdida huber MIRAR
-
         lstm_model.compile(optimizer='adam', loss='mse')
+        lstm_model.fit(trainX, trainY, epochs=10)
         
-        # ValueError: Input 0 of layer "lstm" is incompatible with the layer: expected ndim=3, found ndim=1. Full shape received: (None,)
-        lstm_model.fit(dataset, epochs=10)
-        
-        # conv_loss = conv_model.evaluate(data_test)
-        # print(f"Convolutional model loss: {conv_loss}")
-
-        lstm_loss = lstm_model.evaluate(data_test)
-        print(f"LSTM model loss: {lstm_loss}")
-        
-        # Plot predictions of the models in same window 
-        plt.figure(figsize=(12, 6))
-        plt.plot(data_test, label='True data')
-        # plt.plot(conv_model.predict(data_test), label='Convolutional model')
-        plt.plot(lstm_model.predict(data_test), label='LSTM model')
-        plt.legend()
+        plt.plot(lstm_model.history.history['loss'])
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
         plt.show()
         
-        # if conv_loss < lstm_loss:
-        #     model = conv_model
-            
-        # print("Model " + model + " has been selected.")
+        trainScore = lstm_model.evaluate(trainX, trainY, verbose=0)
+        print('Train Score: %.2f MSE (%.2f RMSE)' % (trainScore, np.sqrt(trainScore)))
+        testScore = lstm_model.evaluate(testX, testY, verbose=0)
+        print('Test Score: %.2f MSE (%.2f RMSE)' % (testScore, np.sqrt(testScore)))
         
-        # model.save('model.h5')
-        
-        # Predict the next value of the time series
-        next_value = lstm_model.predict(data_test)
-        print(f"Next value of the time series: {next_value}")
-        
+        prediction = lstm_model.predict(testX)
+        plt.plot(testY)
+        plt.plot(prediction)
+        plt.title('Model prediction')
+        plt.ylabel('Value')
+        plt.xlabel('Index')
+        plt.show()
         
     else:
         print("Invalid operation. Please choose one of the following: 'stacionary_and_correlation', 'npz_creation', 'load_and_generate_data'")
