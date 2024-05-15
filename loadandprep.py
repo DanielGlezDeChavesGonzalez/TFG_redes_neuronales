@@ -16,6 +16,8 @@ from scipy import stats
 import os
 import IPython
 import IPython.display
+from tensorflow.keras.callbacks import ModelCheckpoint
+
 
 # Database connection parameters
 dbname = "datos_temporales"
@@ -181,7 +183,7 @@ def augmentation_operations(data, augmentations):
         data = data[indices]
     return data
     
-def dataset_generator(file_paths, batch_size, augmentations=[]):
+def dataset_generator(file_paths, batch_size, window_size, augmentations=[]):
     
     all_timestamps = []
     all_values = []
@@ -199,14 +201,54 @@ def dataset_generator(file_paths, batch_size, augmentations=[]):
     train_data, test_data = tuple_array[:train_size], tuple_array[train_size:]
     
     trainX, trainY = [], []
+    # train Y dimension = window_size
     for i in range(len(train_data) - batch_size):
         trainX.append(train_data[i:i+batch_size, 1])
-        trainY.append(train_data[i+batch_size, 1])
+        trainY.append(train_data[i+batch_size:i+batch_size+window_size, 1])
         
     testX, testY = [], []
+    # test Y dimension = window_size
     for i in range(len(test_data) - batch_size):
         testX.append(test_data[i:i+batch_size, 1])
-        testY.append(test_data[i+batch_size, 1])
+        testY.append(test_data[i+batch_size:i+batch_size+window_size, 1])
+                
+    print (f"TrainX last: {trainX[len(trainX)-1]}")
+    print (f"TrainY last: {trainY[len(trainY)-1]}")
+    print (f"TestX last: {testX[len(testX)-1]}")
+    print (f"TestY last: {testY[len(testY)-1]}")
+    
+    contador = 0
+    for i in range(len(trainX)):
+        if len(trainX[i]) != batch_size:
+            contador += 1
+    
+    trainX = trainX[:len(trainX)-contador]
+    trainY = trainY[:len(trainY)-contador]
+    
+    contador = 0
+    for i in range(len(trainY)):
+        if len(trainY[i]) != window_size:
+            contador += 1
+    
+    trainX = trainX[:len(trainX)-contador]
+    trainY = trainY[:len(trainY)-contador]
+    
+    contador = 0
+    for i in range(len(testX)):
+        if len(testX[i]) != batch_size:
+            contador += 1
+    
+    testX = testX[:len(testX)-contador]
+    testY = testY[:len(testY)-contador]
+
+    contador = 0
+    for i in range(len(testY)):
+        if len(testY[i]) != window_size:
+            contador += 1
+    
+    testX = testX[:len(testX)-contador]
+    testY = testY[:len(testY)-contador]
+    
         
     trainX = np.array(trainX)
     trainY = np.array(trainY)
@@ -272,7 +314,11 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         augmentations = ['add_noise']
         
         batch_size = 32
-        trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, augmentations)
+        window_size = 5
+        trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, window_size, augmentations)
+        
+        print("------------", trainX[0])
+        print("................" , trainY[0])
         
         print (f"TrainX shape: {trainX.shape}")
         print (f"TrainY shape: {trainY.shape}")
@@ -300,40 +346,77 @@ def main(operation: str , folder_read : str, folder_save: str) -> None:
         # conv_loss = conv_model.evaluate(data_test)
         # print(f"Convolutional model loss: {conv_loss}")
         
+        model_version = 1
+        dataset_version = 1
+        
         lstm_model = tf.keras.Sequential([
             tf.keras.layers.LSTM(units=50, return_sequences=True, input_shape=(batch_size, 1)),
             tf.keras.layers.LSTM(units=50),
             tf.keras.layers.Dense(units=8),
-            tf.keras.layers.Dense(units=1)
+            tf.keras.layers.Dense(units=window_size)
         ])
         
         lstm_model.summary()
         
-        lstm_model.compile(optimizer='adam', loss='mse')
-        # needed shape -> samples, time steps, and features
-        lstm_model.fit(trainX, trainY, epochs=10, batch_size=32)
+        metrics=[tf.metrics.MeanAbsoluteError()]
         
+        lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics)
+        # needed shape -> samples, time steps, and features
+        
+        checkpoint_filepath = f'./weights/model_{model_version}_dataset_{dataset_version}_{{loss:.3f}}.weights.h5'
+        
+        checkpoint_callback = ModelCheckpoint(
+            checkpoint_filepath,
+            monitor='loss',            
+            mode='min',                    
+            save_weights_only=True,        
+            save_best_only=True,          
+            verbose=1                      
+        )
+
+        lstm_model.fit(trainX, trainY, epochs=3, batch_size=32, callbacks=[checkpoint_callback])
+        
+        # history = model.fit(
+        #     x=train_generator,
+        #     steps_per_epoch=len(train_features) // batch_size,
+        #     epochs=80,
+        #     validation_data=test_generator,
+        #     validation_steps=len(test_features) // b
+                
         # lstm_model.fit(data_train, epochs=10)
         
-        plt.plot(lstm_model.history.history['loss'])
-        plt.title('Model loss')
-        plt.ylabel('Loss')
-        plt.xlabel('Epoch')
-        plt.show()
+        # plt.plot(lstm_model.history.history['loss'])
+        # plt.title('Model loss')
+        # plt.ylabel('Loss')
+        # plt.xlabel('Epoch')
+        # plt.show()
         
-        trainScore = lstm_model.evaluate(trainX, trainY, verbose=0)
-        print('Train Score: %.2f MSE (%.2f RMSE)' % (trainScore, np.sqrt(trainScore)))
-        testScore = lstm_model.evaluate(testX, testY, verbose=0)
-        print('Test Score: %.2f MSE (%.2f RMSE)' % (testScore, np.sqrt(testScore)))
+        # trainScore = lstm_model.evaluate(trainX, trainY, verbose=0)
+        # print('Train Score: %.2f MSE (%.2f RMSE)' % (trainScore, np.sqrt(trainScore)))
+        # testScore = lstm_model.evaluate(testX, testY, verbose=0)
+        # print('Test Score: %.2f MSE (%.2f RMSE)' % (testScore, np.sqrt(testScore)))
         
         prediction = lstm_model.predict(testX)
-        plt.plot(testY)
-        plt.plot(prediction)
+        print(f"prediction 0 :", prediction[0])
+        print(f"testX 0 :", testX[0])
+        print(f"testY 0 :", testY[0])
+        # print(f"Prediction shape: {prediction.shape}")
+        # que la entrada se vea en otro color (verde)
+        plt.plot(testX, color='green')
+        
+        plt.plot( testY, color='red')
+        # que la predicción se ve al final de la serie temporal en otro color (azul)
+        plt.plot(prediction, color='blue')
+        plt.legend(['Input', 'Real', 'Prediction'])
         plt.title('Model prediction')
         plt.ylabel('Value')
         plt.xlabel('Index')
         plt.show()
-        
+    
+    elif operation == 'load_and_train_model':        
+        # model.load_weights(best_filepath)
+        pass
+    
     else:
         print("Invalid operation. Please choose one of the following: 'stacionary_and_correlation', 'npz_creation', 'load_and_generate_data'")
         
