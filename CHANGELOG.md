@@ -101,3 +101,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - loadandprep.py added the lstm and conv model and the compile_and_fit function.
+
+## [1.0.10] - 2024-05-23
+
+### Changed
+- loadandprep.py separated the different functions into different files.
+
+### Added
+- test_data.py created file to test the data loaded.
+- load_data.py created file to load the data and generate npz.
+- train_model.py created file to train the model and save the models generated.
+- use_model.py created file to use the model generated and make predictions.
