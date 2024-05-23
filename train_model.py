@@ -60,6 +60,12 @@ def adjust_batch_sizes(X, Y, expected_size_X, expected_size_Y):
     
     return adjusted_X, adjusted_Y
 
+def create_datasets(data, batch_size, window_size):
+    X, Y = [], []
+    for i in range(len(data) - batch_size):
+        X.append(data[i:i + batch_size, 1])
+        Y.append(data[i + batch_size:i + batch_size + window_size, 1])
+    return X, Y
     
 def dataset_generator(file_paths, batch_size, window_size, augmentations=[]):
     
@@ -78,17 +84,8 @@ def dataset_generator(file_paths, batch_size, window_size, augmentations=[]):
     train_size = int(len(tuple_array) * 0.8)
     train_data, test_data = tuple_array[:train_size], tuple_array[train_size:]
     
-    trainX, trainY = [], []
-    # train Y dimension = window_size
-    for i in range(len(train_data) - batch_size):
-        trainX.append(train_data[i:i+batch_size, 1])
-        trainY.append(train_data[i+batch_size:i+batch_size+window_size, 1])
-        
-    testX, testY = [], []
-    # test Y dimension = window_size
-    for i in range(len(test_data) - batch_size):
-        testX.append(test_data[i:i+batch_size, 1])
-        testY.append(test_data[i+batch_size:i+batch_size+window_size, 1])
+    trainX, trainY = create_datasets(train_data, batch_size, window_size)
+    testX, testY = create_datasets(test_data, batch_size, window_size)
                 
     # print (f"TrainX last: {trainX[len(trainX)-1]}")
     # print (f"TrainY last: {trainY[len(trainY)-1]}")

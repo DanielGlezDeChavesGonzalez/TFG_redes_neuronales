@@ -5,6 +5,7 @@ import pandas as pd
 import os
 from typing import Any, Callable
 import click
+from scipy import stats
 
 
 # Database connection parameters
@@ -14,6 +15,18 @@ port = "5432"
 user = "postgres"
 password = "postgres"
 
+def cleaning(data_array : Any , headers:bool) -> Any:
+        
+    ## Remove duplicates for all files
+    data_array = [data.drop_duplicates() for data in data_array]
+        
+    ## Remove empty strings
+    data_array = [data.replace(r'^\s*$', np.nan, regex=True) for data in data_array]
+    
+    ## Remove outliers from the second column until last using the z-score method
+    data_array = [data[(np.abs(stats.zscore(data)) < 3).all(axis=1)] for data in data_array]
+
+    return data_array
 
 def load_data_from_folder(folder: str) -> Any:
     data = []
@@ -39,6 +52,7 @@ def load_data_from_database ():
     # Connect to your postgres DB
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host)
     
+    # f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
     # Open a cursor to perform database operations
     cur = conn.cursor()
     
