@@ -15,3 +15,7 @@ arch.unitroot
 typing
 scipy
 os
+flask 
+gevent 
+requests 
+pillow
