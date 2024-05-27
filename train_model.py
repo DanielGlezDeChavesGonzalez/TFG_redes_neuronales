@@ -130,7 +130,7 @@ def main(folder_read : str) -> None:
     batch_size = 32
     window_size = 5
     trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, window_size, augmentations)
-    
+        
     # print("------------", trainX[0])
     # print("................" , trainY[0])
     
@@ -198,7 +198,7 @@ def main(folder_read : str) -> None:
     ## ----------------------------------------------------------------
     
     lstm_model = Sequential([
-        LSTM(64, input_shape=(batch_size, window_size), return_sequences=True),
+        LSTM(64, input_shape=(batch_size,1), return_sequences=True),
         Dropout(0.2),
         LSTM(128, return_sequences=True),
         Dropout(0.2),
@@ -213,7 +213,7 @@ def main(folder_read : str) -> None:
     
     lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
     
-    checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.3f}}.weights.h5'
+    checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     
     checkpoint_callback_lstm = ModelCheckpoint(
         checkpoint_filepath_lstm,
@@ -261,17 +261,32 @@ def main(folder_read : str) -> None:
     print(f"testX 0 :", testX[0])
     print(f"testY 0 :", testY[0])
     
-    # print(f"Prediction shape: {prediction.shape}")
-    # que la entrada se vea en otro color (verde)
-    # plt.plot(testX, color='green')
-    # plt.plot( testY, color='red')
-    # # que la predicción se ve al final de la serie temporal en otro color (azul)
-    # plt.plot(prediction, color='blue')
-    # plt.legend(['Input', 'Real', 'Prediction'])
-    # plt.title('Model prediction')
-    # plt.ylabel('Value')
-    # plt.xlabel('Index')
-    # plt.show()
+    # Crear un rango de tiempo para las secuencias
+    time_steps = np.arange(len(testX[0]))
+    future_steps = np.arange(len(testX[0]), len(testX[0]) + len(testY[0]))
+
+    # Crear la figura y los ejes
+    plt.figure(figsize=(12, 6))
+
+    # Graficar la entrada (testX)
+    plt.plot(time_steps, testX[0], 'g')
+
+    # Graficar los valores reales (testY)
+    plt.plot(future_steps, testY[0], 'r')
+
+    # Graficar las predicciones
+    plt.plot(future_steps, prediction[0], 'b')
+    
+    # Añadir títulos y etiquetas
+    plt.title('Predicciones del modelo')
+    plt.xlabel('Paso de Tiempo')
+    plt.ylabel('Valor')
+
+    # Añadir una leyenda
+    plt.legend()
+
+    # Mostrar la gráfica
+    plt.show()
     
     return None
 

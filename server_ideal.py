@@ -1,9 +1,13 @@
 import json
+import keras
 import numpy as np
 from flask import Flask, request, jsonify
 import os
 import redis
 import tensorflow as tf
+from tensorflow.keras.models import load_model # type: ignore
+from tensorflow.keras.models import Sequential # type: ignore
+from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM # type: ignore
 
 # Inicializar la conexión a Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -14,25 +18,37 @@ def load_best_model ():
     
     # checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.5f}}.weights.h5'
     
-    global model
-    
     best_model_path = ""
     current_loss = 1000000
     
-    for root, files in os.walk("./weights"):
-        for file in files:
-            if file.endswith(".h5"):
-                loss = file.split("_")[-1].split(".")[0]
-                if float(loss) < current_loss:
-                    current_loss = float(loss)
-                    best_model_path = os.path.join(root, file)
+    global model
+    
+    for file in os.listdir(".\weights"):
+        loss = file.split("_")[5].split(".weights")[0]
+        if float(loss) < current_loss:
+            current_loss = float(loss)
+            best_model_path = os.path.join(".\weights", file)
     
     print(best_model_path)
+    print("------------------------------------")
+    
+    # print(tf.__version__)
+    # print(keras.__version__)
+    
+    model_lstm = Sequential([
+        LSTM(64, input_shape=(32,1), return_sequences=True),
+        Dropout(0.2),
+        LSTM(128, return_sequences=True),
+        Dropout(0.2),
+        LSTM(256, return_sequences=False),
+        Dropout(0.2),
+        Dense(5)
+    ])
     
     if best_model_path:
-        best_model = tf.keras.models.load_model(best_model_path)
-        model = best_model
-        return best_model    
+        model_lstm.load_weights(best_model_path)
+        
+        return model_lstm    
     else:
         return None
     

@@ -4,7 +4,7 @@ import requests
 import numpy as np
 
 KERAS_REST_API_URL = "http://localhost:5000/predict"
-DATA_PATH = "data.bin"  # Reemplazar con la ruta del archivo de datos
+DATA_PATH = "./datos_peticion.txt"  # Reemplazar con la ruta del archivo de datos
 
 # Cargar los datos de entrada desde un archivo binario
 with open(DATA_PATH, "rb") as f:
