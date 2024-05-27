@@ -5,9 +5,9 @@ from flask import Flask, request, jsonify
 import os
 import redis
 import tensorflow as tf
-from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM # type: ignore
+from model_creators import Lstm_model, Conv1D_model, Dense_model
 
 # Inicializar la conexión a Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -34,23 +34,18 @@ def load_best_model ():
     
     # print(tf.__version__)
     # print(keras.__version__)
-    
-    model_lstm = Sequential([
-        LSTM(64, input_shape=(32,1), return_sequences=True),
-        Dropout(0.2),
-        LSTM(128, return_sequences=True),
-        Dropout(0.2),
-        LSTM(256, return_sequences=False),
-        Dropout(0.2),
-        Dense(5)
-    ])
-    
-    if best_model_path:
-        model_lstm.load_weights(best_model_path)
-        
-        return model_lstm    
+    if best_model_path.split("_")[2] == "lstm":
+        model = Lstm_model().model
+    elif best_model_path.split("_")[2] == "conv1d":
+        model = Conv1D_model().model
+    elif best_model_path.split("_")[2] == "dense":
+        model = Dense_model().model
     else:
-        return None
+        model = None
+    
+    model.load_weights(best_model_path)
+        
+    return model    
     
 def prepare_data(data):
     # image = Image.open(io.BytesIO(data))

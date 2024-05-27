@@ -13,8 +13,9 @@ import os
 import IPython
 import IPython.display
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
-from tensorflow.keras.models import Sequential # type: ignore
-from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM # type: ignore
+
+from model_creators import Lstm_model, Conv1D_model, Dense_model
+
     
 def read_data_from_npz(filename):
     # print(f"redadass--------------------- {filename}")
@@ -141,35 +142,8 @@ def main(folder_read : str) -> None:
     
     ## CONVOLUTIONAL MODEL---------------------------------------------
     ## ----------------------------------------------------------------
-        
-    #  model = Sequential()
-    # model.add(Conv1D(64, 3, activation='relu', input_shape=input_shape))
-    # model.add(Conv1D(64, 3, activation='relu'))
-    # model.add(MaxPooling1D(2))
-    # model.add(Dropout(0.2))
-    # model.add(Conv1D(128, 3, activation='relu'))
-    # model.add(Conv1D(128, 3, activation='relu'))
-    # model.add(MaxPooling1D(2))
-    # model.add(Dropout(0.2))
-    # model.add(Flatten())
-    # model.add(Dense(256, activation='relu'))
-    # model.add(Dropout(0.2))
-    # model.add(Dense(output_steps))
     
-    # conv_model = Sequential([
-    #     Conv1D(64, 3, activation='relu', input_shape=(batch_size, window_size)),
-    #     Conv1D(64, 3, activation='relu'),
-    #     MaxPooling1D(2),
-    #     Dropout(0.2),
-    #     Conv1D(128, 3, activation='relu'),
-    #     Conv1D(128, 3, activation='relu'),
-    #     MaxPooling1D(2),
-    #     Dropout(0.2),
-    #     Flatten(),
-    #     Dense(256, activation='relu'),
-    #     Dropout(0.2),
-    #     Dense(window_size)
-    # ])
+    # conv_model = Conv1D_model().model
     
     # metrics_conv=[tf.metrics.MeanAbsoluteError()]
     
@@ -197,15 +171,7 @@ def main(folder_read : str) -> None:
     ## LSTM MODEL---------------------------------------------	
     ## ----------------------------------------------------------------
     
-    lstm_model = Sequential([
-        LSTM(64, input_shape=(batch_size,1), return_sequences=True),
-        Dropout(0.2),
-        LSTM(128, return_sequences=True),
-        Dropout(0.2),
-        LSTM(256, return_sequences=False),
-        Dropout(0.2),
-        Dense(window_size)
-    ])
+    lstm_model = Lstm_model().model
     
     lstm_model.summary()
     
@@ -229,15 +195,7 @@ def main(folder_read : str) -> None:
     ## DENSE MODEL---------------------------------------------
     ## ----------------------------------------------------------------
     
-    # dense_model = Sequential([
-    #     Dense(64, activation='relu', input_shape=[batch_size, window_size]),
-    #     Dropout(0.2),
-    #     Dense(128, activation='relu'),
-    #     Dropout(0.2),
-    #     Dense(256, activation='relu'),
-    #     Dropout(0.2),
-    #     Dense(window_size)
-    # ])
+    # dense_model = Dense_model().model
     
     # metrics_dense=[tf.metrics.MeanAbsoluteError()]
     
