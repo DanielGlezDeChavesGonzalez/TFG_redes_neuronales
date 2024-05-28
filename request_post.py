@@ -12,6 +12,10 @@ with open(DATA_PATH, "rb") as f:
 
 payload = {"data": data}
 
+print("Enviando solicitud POST al servidor REST API...")
+print("Payload: ", payload)
+
+
 # Enviar la solicitud POST
 r = requests.post(KERAS_REST_API_URL, files=payload).json()
 

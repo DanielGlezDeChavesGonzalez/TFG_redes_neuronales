@@ -15,6 +15,11 @@ class Lstm_model :
             Dense(5)
         ])
         
+    def load_weights(self, path):
+        self.model.load_weights(path)
+        
+    def predict (self, data):
+        return self.model.predict(data)
 
 class Conv1D_model:
     
@@ -30,6 +35,11 @@ class Conv1D_model:
             Dense(5)
         ])
         
+    def load_weights(self, path):
+        self.model.load_weights(path)
+        
+    def predict (self, data):
+        return self.model.predict(data)
 
 class Dense_model:
         
@@ -43,7 +53,13 @@ class Dense_model:
             Dropout(0.2),
             Dense(5)
         ])
-
+        
+    def load_weights(self, path):
+        self.model.load_weights(path)
+        
+    def predict (self, data):
+        return self.model.predict(data)
+    
     
         
     

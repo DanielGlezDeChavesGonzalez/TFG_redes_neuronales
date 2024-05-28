@@ -34,14 +34,14 @@ def load_best_model ():
     
     # print(tf.__version__)
     # print(keras.__version__)
-    if best_model_path.split("_")[2] == "lstm":
-        model = Lstm_model().model
-    elif best_model_path.split("_")[2] == "conv1d":
-        model = Conv1D_model().model
-    elif best_model_path.split("_")[2] == "dense":
-        model = Dense_model().model
+    if best_model_path.split("_")[1] == "lstm":
+        model = Lstm_model()
+    elif best_model_path.split("_")[1] == "conv1d":
+        model = Conv1D_model()
+    elif best_model_path.split("_")[1] == "dense":
+        model = Dense_model()
     else:
-        model = None
+        raise ValueError(f"Unrecognized model type in file name: {best_model_path}")
     
     model.load_weights(best_model_path)
         
