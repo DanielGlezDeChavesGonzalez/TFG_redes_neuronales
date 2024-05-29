@@ -3,11 +3,13 @@ import keras
 import numpy as np
 from flask import Flask, request, jsonify
 import os
+import struct
 import redis
 import tensorflow as tf
 from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM # type: ignore
 from model_creators import Lstm_model, Conv1D_model, Dense_model
+import threading
 
 # Inicializar la conexión a Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -47,17 +49,6 @@ def load_best_model ():
         
     return model    
     
-def prepare_data(data):
-    # image = Image.open(io.BytesIO(data))
-    # image = preprocess_image(image)
-    # data = image_to_array(image)
-    
-    # data = preprocess_text(data)
-    
-    data = np.frombuffer(data, dtype=np.float32)
-    data = data.reshape(1, 32)  # Ajustar la forma según sea necesario
-    
-    return data
 
 def process_task_queue():
     while True:
@@ -68,16 +59,35 @@ def process_task_queue():
         task_id = task_id.decode('utf-8')
         data_bytes = r.get(f'task:{task_id}')
         
+        print(f"Processing task {task_id}")
+        
         if data_bytes is not None:
-            data = prepare_data(data_bytes)
+            print(f"Task {task_id} started")
+            # Convertir los datos binarios a un array de floats
+            data = np.frombuffer(data_bytes, dtype=np.float64)
+            
+            print (f"Data: {data}")
+            
+            # Reshape the data to the expected input shape of the model
+            data = data.reshape(-1, 32, 1)
+            
             preds = model.predict(data)
             
-            predictions = []
-            for pred in preds:
-                predictions.append({"value": float(pred)})
+            print(f"Task {task_id} completed")
+            # print(f"Data: {data}")
+            print(f"Predictions: {preds}")
+            # Predictions: [[0.92251194 0.92104053 0.922166   0.9214076  0.92190003]]
             
-            result = {"predictions": predictions}
+            # Convertir las predicciones a un formato JSON
+            preds = preds.tolist()
+            result = {"task_id": task_id, "predictions": preds}
             r.set(f'result:{task_id}', json.dumps(result))
+            print(f"Result for task {task_id} saved")
+        else:
+            print(f"Task {task_id} has no data")
+            result = {"task_id": task_id, "error": "Task has no data"}
+            r.set(f'result:{task_id}', json.dumps(result))
+            print(f"Result for task {task_id} saved")
 
 @app.route("/")
 def general():
@@ -86,33 +96,42 @@ def general():
 @app.route("/predict", methods=["POST"])
 def predict():
     data = {"success": False}
-    
+
     if request.method == "POST":
-        if request.files.get("data"):
-            data_bytes = request.files["data"].read()
+        request_data = request.get_json()
+        if request_data and request_data.get("data"):
+            data_predict = np.array(request_data["data"])
             
+            # print(f"Data type: {type(data)}")
+
+            # print(f"Data received: {data}")
+
             # Agregar la tarea a la cola de Redis
             task_id = r.incr('task_id')
             r.rpush('task_queue', task_id)
-            r.set(f'task:{task_id}', data_bytes)
+            r.set(f'task:{task_id}', data_predict.tobytes())
             
+            # print (f"Task ID key and data: {task_id}, {r.get(f'task:{task_id}')}")
+            
+            # print(f"Task {task_id} added to the queue")
+
             data["task_id"] = task_id
             data["success"] = True
-            
+
             # Procesar la tarea de la cola
             process_task_queue()
-    
+
     return jsonify(data)
 
-@app.route("/results/<task_id>", methods=["GET"])
+@app.route("/predict/results/<task_id>", methods=["GET"])
 def get_results(task_id):
-    result = r.get(f'result:{task_id}')
-    if result is None:
-        return jsonify({"error": "Task not found or not completed yet"}), 404
     
-    return jsonify(json.loads(result))
-
-import threading
+    result = r.get(f'result:{task_id}')
+    if result is not None:
+        result = json.loads(result)
+    else:
+        result = {"error": "Task not found"}
+    return jsonify(result)
 
 def run_task_queue_worker():
     while True:

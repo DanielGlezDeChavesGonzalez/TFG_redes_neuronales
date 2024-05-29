@@ -132,12 +132,13 @@ def main(folder_read : str) -> None:
     window_size = 5
     trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, window_size, augmentations)
         
-    # print("------------", trainX[0])
+    print("------------", testX[0])
     # print("................" , trainY[0])
     
     # print (f"TrainX shape: {trainX.shape}")
     # print (f"TrainY shape: {trainY.shape}")
-    # print (f"TestX shape: {testX.shape}")
+    print (f"TestX shape: {testX.shape}")
+    print (f"TestX0 shape: {testX[0].shape}")
     # print (f"TestY shape: {testY.shape}")      
     
     ## CONVOLUTIONAL MODEL---------------------------------------------
@@ -190,7 +191,7 @@ def main(folder_read : str) -> None:
         verbose=1                      
     )
 
-    lstm_model.fit(trainX, trainY, epochs=3, batch_size=32, callbacks=[checkpoint_callback_lstm])
+    lstm_model.fit(trainX, trainY, epochs=1, batch_size=32, callbacks=[checkpoint_callback_lstm])
     
     ## DENSE MODEL---------------------------------------------
     ## ----------------------------------------------------------------
@@ -214,8 +215,13 @@ def main(folder_read : str) -> None:
     
     # dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
     
-    prediction = lstm_model.predict(testX)
-    print(f"prediction 0 :", prediction[0])
+    data_test = testX[0].reshape(-1, 32, 1)
+    
+    print(f"Data test shape: {data_test.shape}")
+    print(f"Data test: {data_test}")
+    
+    prediction = lstm_model.predict(data_test)
+    print(f"prediction 0 :", prediction)
     print(f"testX 0 :", testX[0])
     print(f"testY 0 :", testY[0])
     
