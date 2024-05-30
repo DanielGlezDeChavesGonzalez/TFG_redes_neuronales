@@ -16,6 +16,7 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
 model = None
 
+    
 def load_best_model ():
     
     # checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.5f}}.weights.h5'
@@ -90,8 +91,9 @@ def process_task_queue():
             print(f"Result for task {task_id} saved")
 
 @app.route("/")
-def general():
-    return "Welcome to the LSTM model API using as a queue Redis"
+def general():    
+    return "Api Rest para predicción de series temporales"
+
 
 @app.route("/predict", methods=["POST"])
 def predict():

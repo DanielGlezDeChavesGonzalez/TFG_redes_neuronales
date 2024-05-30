@@ -13,16 +13,10 @@ import os
 import IPython
 import IPython.display
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
-
+import dask.dataframe as dd
+from tensorflow.keras.models import Sequential # type: ignore
 from model_creators import Lstm_model, Conv1D_model, Dense_model
 
-    
-def read_data_from_npz(filename):
-    # print(f"redadass--------------------- {filename}")
-    with np.load(filename) as data:
-        # print(f"Data has been successfully loaded from {filename}")
-        return data['Timestamp'], data['Value']
-     
 def augmentation_operations(data, augmentations):
     timestamps, values = data[:, 0], data[:, 1].astype(float)
     if 'normalize' in augmentations:
@@ -58,8 +52,15 @@ def augmentation_operations(data, augmentations):
 
     augmented_data = np.column_stack((timestamps, values))
     return augmented_data
+    
+def read_data_from_npz(filename, data_type=np.float32):
+    print(f"Reading data from {filename}")
+    with np.load(filename) as data:
+        timestamps = data['Timestamp']
+        values = data['Value'].astype(data_type)
+        return timestamps, values
 
-def read_and_combine_data(file_paths):
+def read_and_combine_data(file_paths, data_type=np.float32):
     all_timestamps = []
     all_values = []
 
@@ -69,6 +70,14 @@ def read_and_combine_data(file_paths):
         all_values.extend(values)
 
     return np.array(list(zip(all_timestamps, all_values)))
+
+# def read_and_combine_data(file_paths, data_type=np.float32):
+#     data_list = []
+#     for file in file_paths:
+#         timestamps, values = read_data_from_npz(file, data_type)
+#         data_list.append(np.column_stack((timestamps, values)))
+#     combined_data = np.vstack(data_list)
+#     return combined_data
 
 def split_data(data, train_ratio=0.8):
     train_size = int(len(data) * train_ratio)
@@ -92,28 +101,78 @@ def adjust_batch_sizes(X, Y, expected_size_X, expected_size_Y):
 
     return adjusted_X, adjusted_Y
 
-def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8):
-    combined_data = read_and_combine_data(file_paths)
+# def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8):
+def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8, data_type=np.float32):
+    combined_data = read_and_combine_data(file_paths, data_type)
+  
+    print (f"Data has been read and combined")
+    
     train_data, test_data = split_data(combined_data, train_ratio)
+    
+    print (f"Data has been splitted")
 
     trainX, trainY = create_sequences(train_data, batch_size, window_size)
     testX, testY = create_sequences(test_data, batch_size, window_size)
+    
+    print (f"Sequences have been created")
 
     trainX, trainY = adjust_batch_sizes(trainX, trainY, batch_size, window_size)
     testX, testY = adjust_batch_sizes(testX, testY, batch_size, window_size)
+    
+    print (f"Splitted data, created sequences and adjusted batch sizes")
 
     trainX = np.array(trainX)
     trainY = np.array(trainY)
     testX = np.array(testX)
     testY = np.array(testY)
-
-    # trainX = augmentation_operations(trainX, augmentations)
-    # trainY = augmentation_operations(trainY, augmentations)
-    # testX = augmentation_operations(testX, augmentations)
-    # testY = augmentation_operations(testY, augmentations)
+    
+    print (f"Data has been converted to numpy arrays")
+    
+    trainX = augmentation_operations(trainX, augmentations)
+    trainY = augmentation_operations(trainY, augmentations)
+    testX = augmentation_operations(testX, augmentations)
+    testY = augmentation_operations(testY, augmentations)
+    
+    print (f"Post augmentation")
 
     return trainX, trainY, testX, testY
 
+# def read_data_from_npz(filename):
+#     data = np.load(filename)
+#     df = dd.from_array(np.column_stack((data['Timestamp'], data['Value'])), columns=['Timestamp', 'Value'])
+#     return df
+
+# def read_and_combine_data(file_paths):
+#     dfs = [read_data_from_npz(file) for file in file_paths]
+#     combined_df = dd.multi.concat(dfs, axis=0, ignore_unknown_divisions=True)
+#     return combined_df
+
+# def split_data(data, train_ratio=0.8):
+#     train_size = int(len(data) * train_ratio)
+#     train_data = data.head(train_size)
+#     test_data = data.tail(len(data) - train_size)
+#     return train_data, test_data
+
+# def create_sequences(data, batch_size, window_size):
+#     X = data['Value'].shift(window_size).rolling(batch_size + window_size).apply(lambda x: x[:batch_size], meta=('Value', 'float64')).dropna()
+#     Y = data['Value'].shift(-batch_size).rolling(batch_size + window_size).apply(lambda x: x[-window_size:], meta=('Value', 'float64')).dropna()
+#     return X, Y
+
+# def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8):
+#     combined_data = read_and_combine_data(file_paths)
+#     train_data, test_data = split_data(combined_data, train_ratio)
+
+#     trainX, trainY = create_sequences(train_data, batch_size, window_size)
+#     testX, testY = create_sequences(test_data, batch_size, window_size)
+
+#     trainX = trainX.compute()
+#     trainY = trainY.compute()
+#     testX = testX.compute()
+#     testY = testY.compute()
+
+#     # Perform data augmentation operations here if needed
+
+#     return trainX, trainY, testX, testY
     
 @click.command()
 # @click.argument('operation', type=str , default='stacionary_and_correlation')
@@ -128,43 +187,50 @@ def main(folder_read : str) -> None:
     # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
     augmentations = ['add_noise']
     
+    # Specify the desired data type (np.float32 or np.float16)
+    data_type = np.float32
+    
     batch_size = 32
     window_size = 5
-    trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, window_size, augmentations)
+    print (f"Dataset will be generated with batch size {batch_size} and window size {window_size}")
+    
+    trainX, trainY, testX, testY = dataset_generator(file_paths, batch_size, window_size, augmentations, data_type=data_type)
         
-    print("------------", testX[0])
+    # print("------------", testX[0])
     # print("................" , trainY[0])
     
     # print (f"TrainX shape: {trainX.shape}")
     # print (f"TrainY shape: {trainY.shape}")
-    print (f"TestX shape: {testX.shape}")
-    print (f"TestX0 shape: {testX[0].shape}")
+    # print (f"TestX shape: {testX.shape}")
+    # print (f"TestX0 shape: {testX[0].shape}")
     # print (f"TestY shape: {testY.shape}")      
     
     ## CONVOLUTIONAL MODEL---------------------------------------------
     ## ----------------------------------------------------------------
     
-    # conv_model = Conv1D_model().model
+    print("Convolutional model")
     
-    # metrics_conv=[tf.metrics.MeanAbsoluteError()]
+    conv_model = Conv1D_model().model
     
-    # conv_model.compile(optimizer='adam', loss='mse', metrics=metrics_conv)
+    conv_model.summary()
+
+    metrics_conv=[tf.metrics.MeanAbsoluteError()]
     
-    # checkpoint_filepath_conv = f'./weights/model_conv_{model_version}_dataset_{dataset_version}_{{loss:.3f}}.weights.h5'
+    conv_model.compile(optimizer='adam', loss='mean_absolute_error', metrics=metrics_conv)
     
-    # checkpoint_callback_conv = ModelCheckpoint(
-    #     checkpoint_filepath_conv,
-    #     monitor='loss',            
-    #     mode='min',                    
-    #     save_weights_only=True,        
-    #     save_best_only=True,          
-    #     verbose=1                      
-    # )
+    checkpoint_filepath_conv = f'./weights/model_conv_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     
-    # conv_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_conv])
-            
-    # conv_loss = conv_model.evaluate(data_test)
-    # print(f"Convolutional model loss: {conv_loss}")
+    checkpoint_callback_conv = ModelCheckpoint(
+        checkpoint_filepath_conv,
+        monitor='loss',            
+        mode='min',                    
+        save_weights_only=True,        
+        save_best_only=True,          
+        verbose=1                      
+    )
+    
+    
+    conv_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_conv])
     
     model_version = 1
     dataset_version = 1
@@ -172,13 +238,17 @@ def main(folder_read : str) -> None:
     ## LSTM MODEL---------------------------------------------	
     ## ----------------------------------------------------------------
     
+    print("LSTM model")
+    
     lstm_model = Lstm_model().model
     
     lstm_model.summary()
     
     metrics_lstm=[tf.metrics.MeanAbsoluteError()]
     
-    lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
+    lstm_model.compile(optimizer='adam', loss='mean_absolute_error', metrics=metrics_lstm)
+    
+    # loss mae, mse, huber
     
     checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     
@@ -191,66 +261,79 @@ def main(folder_read : str) -> None:
         verbose=1                      
     )
 
-    lstm_model.fit(trainX, trainY, epochs=1, batch_size=32, callbacks=[checkpoint_callback_lstm])
+    lstm_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_lstm])
     
     ## DENSE MODEL---------------------------------------------
     ## ----------------------------------------------------------------
     
-    # dense_model = Dense_model().model
+    print("Dense model")
     
-    # metrics_dense=[tf.metrics.MeanAbsoluteError()]
+    dense_model = Dense_model().model
     
-    # dense_model.compile(optimizer='adam', loss='mse', metrics=metrics_dense)
+    dense_model.summary()
     
-    # checkpoint_filepath_dense = f'./weights/model_dense_{model_version}_dataset_{dataset_version}_{{loss:.3f}}.weights.h5'
+    metrics_dense=[tf.metrics.MeanAbsoluteError()]
     
-    # checkpoint_callback_dense = ModelCheckpoint(
-    #     checkpoint_filepath_dense,
-    #     monitor='loss',            
-    #     mode='min',                    
-    #     save_weights_only=True,        
-    #     save_best_only=True,          
-    #     verbose=1                      
-    # )
+    dense_model.compile(optimizer='adam', loss='mean_absolute_error', metrics=metrics_dense)
     
-    # dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
+    checkpoint_filepath_dense = f'./weights/model_dense_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     
-    data_test = testX[0].reshape(-1, 32, 1)
+    checkpoint_callback_dense = ModelCheckpoint(
+        checkpoint_filepath_dense,
+        monitor='loss',            
+        mode='min',                    
+        save_weights_only=True,        
+        save_best_only=True,          
+        verbose=1                      
+    )
     
-    print(f"Data test shape: {data_test.shape}")
-    print(f"Data test: {data_test}")
+    dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
     
-    prediction = lstm_model.predict(data_test)
-    print(f"prediction 0 :", prediction)
-    print(f"testX 0 :", testX[0])
-    print(f"testY 0 :", testY[0])
+    ## EVALUATION---------------------------------------------
+    ## ----------------------------------------------------------------
     
-    # Crear un rango de tiempo para las secuencias
-    time_steps = np.arange(len(testX[0]))
-    future_steps = np.arange(len(testX[0]), len(testX[0]) + len(testY[0]))
+    print("Evaluation")
+    conv_loss = conv_model.evaluate(testX, testY)
+    print(f"Convolutional model loss: {conv_loss}")
+    
+    lstm_loss = lstm_model.evaluate( testX, testY)
+    print(f"LSTM model loss: {lstm_loss}")
+    
+    dense_loss = dense_model.evaluate( testX, testY)
+    print(f"Dense model loss: {dense_loss}")
+    
+    
+    # prediction = lstm_model.predict(testX)
+    # print(f"prediction 0 :", prediction[0])
+    # print(f"testX 0 :", testX[0])
+    # print(f"testY 0 :", testY[0])
+    
+    # # Crear un rango de tiempo para las secuencias
+    # time_steps = np.arange(len(testX[0]))
+    # future_steps = np.arange(len(testX[0]), len(testX[0]) + len(testY[0]))
 
-    # Crear la figura y los ejes
-    plt.figure(figsize=(12, 6))
+    # # Crear la figura y los ejes
+    # plt.figure(figsize=(12, 6))
 
-    # Graficar la entrada (testX)
-    plt.plot(time_steps, testX[0], 'g')
+    # # Graficar la entrada (testX)
+    # plt.plot(time_steps, testX[0], 'g')
 
-    # Graficar los valores reales (testY)
-    plt.plot(future_steps, testY[0], 'r')
+    # # Graficar los valores reales (testY)
+    # plt.plot(future_steps, testY[0], 'r')
 
-    # Graficar las predicciones
-    plt.plot(future_steps, prediction[0], 'b')
+    # # Graficar las predicciones
+    # plt.plot(future_steps, prediction[0], 'b')
     
-    # Añadir títulos y etiquetas
-    plt.title('Predicciones del modelo')
-    plt.xlabel('Paso de Tiempo')
-    plt.ylabel('Valor')
+    # # Añadir títulos y etiquetas
+    # plt.title('Predicciones del modelo')
+    # plt.xlabel('Paso de Tiempo')
+    # plt.ylabel('Valor')
 
-    # Añadir una leyenda
-    plt.legend()
+    # # Añadir una leyenda
+    # plt.legend()
 
-    # Mostrar la gráfica
-    plt.show()
+    # # Mostrar la gráfica
+    # plt.show()
     
     return None
 

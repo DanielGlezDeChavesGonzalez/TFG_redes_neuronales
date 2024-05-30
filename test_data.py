@@ -8,8 +8,6 @@ import os
 from loguru import logger
 import numpy as np
 
-
-
 # augmented dickey fuller test represented with graphs with plt
 def adf_test(data: pd.Series) -> None:
     print("ADF Test-----------------------------------------")
@@ -79,38 +77,41 @@ def pp_test(data: pd.Series) -> None:
             
     return None
 
-def read_data_from_npz(filename):
-    # print(f"redadass--------------------- {filename}")
+# def read_data_from_npz(filename):
+#     with np.load(filename) as data:
+#         return data['Timestamp'], data['Value']
+def read_data_from_npz(filename, data_type=np.float32):
+    print(f"Reading data from {filename}")
     with np.load(filename) as data:
-        # print(f"Data has been successfully loaded from {filename}")
-        return data['Timestamp'], data['Value']
-
+        timestamps = data['Timestamp']
+        values = data['Value'].astype(data_type)
+        return timestamps, values
 
 @click.command()
-# @click.argument('operation', type=str , default='stacionary_and_correlation')
 @click.option('--folder-read', type=str, default='.', help="Folder where the data is stored.")
-# @click.option('--folder-save', type=str, default='.', help="Folder where the data will be saved.")
 
 def main(folder_read : str) -> None:
     
-    data = []
+    all_timestamps = []
+    all_values = []
     
+    data_type = np.float32
+        
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
 
     for file in file_paths:
-        timestamps, values = read_data_from_npz(file)
-        data.append(pd.DataFrame({'Timestamp': timestamps, 'Value': values}))
+        timestamps, values = read_data_from_npz(file , data_type)
+        all_timestamps.extend(timestamps)
+        all_values.extend(values)
         
-    # python .\loadandprep.py --folder-read .\datos_sensores\
-    for df, file in zip(data, os.listdir(folder_read)):
-        print(f"Data analize from file {file}")
-        # chunks = slice_data(df, 10000)
-        # for chunk in chunks:
-        #     adf_test(chunk)
-        #     kpss_test(chunk)
-        #     # acf_pacf(chunk)
-        #     pp_test(chunk)
-        adf_test(df)
-        kpss_test(df)
-        # acf_pacf(df)
-        pp_test(df)
+        
+    df = pd.DataFrame({'Timestamp': all_timestamps, 'Value': all_values})
+    print(df.head())
+    adf_test(df)
+    kpss_test(df)
+    acf_pacf(df)
+    pp_test(df)
+    
+if __name__ == '__main__':
+    main()
+    

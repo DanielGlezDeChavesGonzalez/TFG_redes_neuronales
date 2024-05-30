@@ -92,6 +92,8 @@ def create_npz(data, filename, folder_save ):
 @click.option('--folder-save', type=str, default='.', help="Folder where the data will be saved.")
 
 def main(folder_read : str, folder_save: str) -> None:
+    
+    # print(f"Data will be saved in {folder_save}")
 
     if folder_read:
         # python .\load_data.py --folder-read .\datos_sensores_prueba\
@@ -113,3 +115,6 @@ def main(folder_read : str, folder_save: str) -> None:
         npz_filename = f'data_chunk_{idx}.npz'
         create_npz(chunk, npz_filename, folder_save)
     print("Data has been successfully saved in NPZ format.")
+    
+if __name__ == '__main__':
+    main()

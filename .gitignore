@@ -2,8 +2,9 @@
 **.csv
 **.txt
 datos_sensores/
-datos_fix/
-datos_fix2/
+scripts/
+_pycache_/
 datos_sensores_prueba/
 **.sql
 time_series.ipynb
+datos_npz/

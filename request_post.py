@@ -30,7 +30,6 @@ print("Respuesta del servidor REST API: ", r)
 # Comprobar si la solicitud fue exitosa
 r = json.loads(r)
 
-
 if r["success"]:
     task_id = r["task_id"]
     print(f"Tarea enviada correctamente. ID de tarea: {task_id}")
