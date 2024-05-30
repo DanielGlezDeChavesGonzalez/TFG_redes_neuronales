@@ -84,30 +84,30 @@ def adjust_batch_sizes(X, Y, expected_size_X, expected_size_Y):
 def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8):
     combined_data = read_and_combine_data(file_paths)
     
-    print (f"Data has been read and combined")
+    # print (f"Data has been read and combined")
     train_data, test_data = split_data(combined_data, train_ratio)
     
-    print (f"Data has been splitted")
+    # print (f"Data has been splitted")
     trainX, trainY = create_sequences(train_data, batch_size, window_size)
     testX, testY = create_sequences(test_data, batch_size, window_size)
     
-    print (f"Sequences have been created")
+    # print (f"Sequences have been created")
     trainX, trainY = adjust_batch_sizes(trainX, trainY, batch_size, window_size)
     testX, testY = adjust_batch_sizes(testX, testY, batch_size, window_size)
     
-    print (f"Splitted data, created sequences and adjusted batch sizes")
+    # print (f"Splitted data, created sequences and adjusted batch sizes")
     trainX = np.array(trainX)
     trainY = np.array(trainY)
     testX = np.array(testX)
     testY = np.array(testY)
 
-    print (f"Data has been converted to numpy arrays")
+    # print (f"Data has been converted to numpy arrays")
     trainX = augmentation_operations(trainX, augmentations)
     trainY = augmentation_operations(trainY, augmentations)
     testX = augmentation_operations(testX, augmentations)
     testY = augmentation_operations(testY, augmentations)
     
-    print (f"Post augmentation")
+    # print (f"Post augmentation")
 
     return trainX, trainY, testX, testY
     
@@ -118,7 +118,7 @@ def main(folder_read : str) -> None:
             
     # python .\loadandprep.py --folder-read .\datos_npz\
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
-
+        
     # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
     augmentations = ['add_noise']
     
@@ -188,9 +188,10 @@ def main(folder_read : str) -> None:
     
     print("Training")
         
-    number_files_per_iteration = 500
+    number_files_per_iteration = 1000
     
     for i in range(0, len(file_paths), number_files_per_iteration):
+        print (f"Training with files {i} to {i+number_files_per_iteration}")
             
         trainX, trainY, testX, testY = dataset_generator(file_paths[i:i+number_files_per_iteration], batch_size, window_size, augmentations)
         
@@ -201,8 +202,8 @@ def main(folder_read : str) -> None:
         print (f"TestY shape: {testY.shape}")
         
         conv_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_conv])
-        lstm_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_lstm])
-        dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
+        # lstm_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_lstm])
+        # dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
         
     ## EVALUATION---------------------------------------------
     
