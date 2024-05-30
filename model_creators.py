@@ -34,7 +34,7 @@ class Conv1D_model:
             MaxPooling1D(2),
             Conv1D(256, 3, activation='relu'),
             Conv1D(256, 3, activation='relu'),
-            MaxPooling1D(2),
+            # MaxPooling1D(2),
             Flatten(),
             Dense(5)
         ])

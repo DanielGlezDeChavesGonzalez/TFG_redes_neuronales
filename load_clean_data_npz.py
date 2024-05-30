@@ -96,7 +96,7 @@ def main(folder_read : str, folder_save: str) -> None:
     # print(f"Data will be saved in {folder_save}")
 
     if folder_read:
-        # python .\load_data.py --folder-read .\datos_sensores_prueba\
+        # python .\load_data.py --folder-read .\datos_sensores\ --folder-save .\datos_npz\
         logger.info(f"Data will be loaded from {folder_read}")
         data = load_data_from_folder(folder_read)
     else:

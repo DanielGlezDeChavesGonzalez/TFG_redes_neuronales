@@ -92,6 +92,8 @@ def read_data_from_npz(filename, data_type=np.float32):
 
 def main(folder_read : str) -> None:
     
+    # python test_data.py --folder-read .\datos_sensores\
+    
     all_timestamps = []
     all_values = []
     
