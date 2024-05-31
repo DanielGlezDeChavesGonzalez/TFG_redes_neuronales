@@ -3,7 +3,7 @@
 **.txt
 datos_sensores/
 scripts/
-_pycache_/
+__pycache__/
 datos_sensores_prueba/
 **.sql
 time_series.ipynb
