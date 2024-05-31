@@ -2,20 +2,20 @@
 import numpy as np
 import tensorflow as tf
 import click
-from loguru import logger
-from typing import Any, Callable
-from matplotlib import pyplot as plt
-import pandas as pd
-from sqlalchemy import create_engine
-import seaborn as sns
 from scipy import stats
 import os
-import IPython
-import IPython.display
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
-import dask.dataframe as dd
-from tensorflow.keras.models import Sequential # type: ignore
 from model_creators import Lstm_model, Conv1D_model, Dense_model
+# from loguru import logger
+# from typing import Any, Callable
+# from matplotlib import pyplot as plt
+# import pandas as pd
+# from sqlalchemy import create_engine
+# import seaborn as sns
+# import IPython
+# import IPython.display
+# import dask.dataframe as dd
+# from tensorflow.keras.models import Sequential # type: ignore
 
 def augmentation_operations(data, augmentations):
     augmented_data = data.copy()
@@ -40,7 +40,7 @@ def augmentation_operations(data, augmentations):
             augmented_data = augmented_data.sample(frac=1).reset_index(drop=True)
             
     return augmented_data
-    
+
 def read_data_from_npz(filename):
     # print(f"Reading data from {filename}")
     with np.load(filename) as data:
@@ -48,16 +48,26 @@ def read_data_from_npz(filename):
         values = data['Value']
         return timestamps, values
 
-def read_and_combine_data(file_paths):
+def read_and_combine_data(file_path):
     all_timestamps = []
     all_values = []
 
-    for file in file_paths:
-        timestamps, values = read_data_from_npz(file)
-        all_timestamps.extend(timestamps)
-        all_values.extend(values)
+    timestamps, values = read_data_from_npz(file_path)
+    all_timestamps.extend(timestamps)
+    all_values.extend(values)
         
     return np.array(list(zip(all_timestamps, all_values)))
+
+# def read_and_combine_data(file_paths):
+#     all_timestamps = []
+#     all_values = []
+
+#     for file_path in file_paths:
+#         timestamps, values = read_data_from_npz(file_path)
+#         all_timestamps.extend(timestamps)
+#         all_values.extend(values)
+        
+#     return np.array(list(zip(all_timestamps, all_values)))
 
 def split_data(data, train_ratio=0.8):
     train_size = int(len(data) * train_ratio)
@@ -81,8 +91,8 @@ def adjust_batch_sizes(X, Y, expected_size_X, expected_size_Y):
 
     return adjusted_X, adjusted_Y
 
-def dataset_generator(file_paths, batch_size, window_size, augmentations=[], train_ratio=0.8):
-    combined_data = read_and_combine_data(file_paths)
+def dataset_generator(file_path, batch_size, window_size, augmentations=[], train_ratio=0.8):
+    combined_data = read_and_combine_data(file_path)
     
     # print (f"Data has been read and combined")
     train_data, test_data = split_data(combined_data, train_ratio)
@@ -111,6 +121,31 @@ def dataset_generator(file_paths, batch_size, window_size, augmentations=[], tra
 
     return trainX, trainY, testX, testY
     
+# def data_generator(file_paths, batch_size, window_size, augmentations=[]):
+#     for file in file_paths:
+#         data = read_data_from_npz(file)
+#         print (f"Data head  {data[:5]}")
+#         X, Y = create_sequences(data, batch_size, window_size)
+#         ## Se pierden los valores de X e Y
+#         print (f"Start sec of X: {X[:5]}")
+#         print (f"Start sec of Y: {Y[:5]}")
+#         X, Y = adjust_batch_sizes(X, Y, batch_size, window_size)
+#         print (f"Start bat of X: {X[:5]}")
+#         print (f"Start bat of Y: {Y[:5]}")
+#         X = augmentation_operations(X, augmentations)
+#         Y = augmentation_operations(Y, augmentations)
+#         print (f"Start of augm X: {X[:5]}")
+#         print (f"Start of augm Y: {Y[:5]}")
+        
+#         # print (f"X: {X}")
+#         # print (f"Y: {Y}")
+#         for i in range(0, len(X), batch_size):
+            
+#             # print lo que se va a devolver en cada iteración del loo 
+#             print (f"X: {X[i:i + batch_size]}")
+#             print (f"Y: {Y[i:i + batch_size]}")
+#             yield X[i:i + batch_size], Y[i:i + batch_size]
+            
 @click.command()
 @click.option('--folder-read', type=str, default='.', help="Folder where the data is stored.")
 
@@ -123,7 +158,7 @@ def main(folder_read : str) -> None:
     augmentations = ['add_noise']
     
     batch_size = 32
-    window_size = 5
+    window_size = 10
     print (f"Dataset will be generated with batch size {batch_size} and window size {window_size}")
     
     model_version = 1
@@ -188,23 +223,42 @@ def main(folder_read : str) -> None:
     
     print("Training")
         
-    number_files_per_iteration = 1000
-    
-    for i in range(0, len(file_paths), number_files_per_iteration):
-        print (f"Training with files {i} to {i+number_files_per_iteration}")
+    # number_files_per_iteration = 1
+    max_files = 3
+    # for i in range(0, len(file_paths)):
+    for i in range(0, max_files):
+        print (f"Training file {i}")
             
-        trainX, trainY, testX, testY = dataset_generator(file_paths[i:i+number_files_per_iteration], batch_size, window_size, augmentations)
+        trainX, trainY, testX, testY = dataset_generator(file_paths[i], batch_size, window_size, augmentations)
         
         # print shape of trainX, trainY, testX, testY
-        print (f"TrainX shape: {trainX.shape}")
-        print (f"TrainY shape: {trainY.shape}")
-        print (f"TestX shape: {testX.shape}")
-        print (f"TestY shape: {testY.shape}")
+        # print (f"TrainX shape: {trainX.shape}")
+        # print (f"TrainY shape: {trainY.shape}")
+        # print (f"TestX shape: {testX.shape}")
+        # print (f"TestY shape: {testY.shape}")
         
         conv_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_conv])
         # lstm_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_lstm])
         # dense_model.fit(trainX, trainY, epochs=10, batch_size=32, callbacks=[checkpoint_callback_dense])
         
+        if i ==  max_files - 1:
+            print("Evaluation innnnn")
+            loss_conv = conv_model.evaluate(testX, testY)
+
+        
+    # print("Training")
+    # train_gen = data_generator(file_paths, batch_size, window_size, augmentations)
+    # steps_per_epoch = sum([len(read_data_from_npz(f)) for f in file_paths]) // batch_size
+    
+    # print (f"Steps per epoch: {steps_per_epoch}")
+    
+    # conv_model.fit(train_gen, epochs=10, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv])
+
+    # print("Evaluation")
+    # test_gen = data_generator(file_paths, batch_size, window_size, augmentations)
+    # loss_conv = conv_model.evaluate(test_gen, steps=steps_per_epoch)
+    # print(f"Convolutional model loss: {loss_conv}")
+
     ## EVALUATION---------------------------------------------
     
     print("Evaluation")
@@ -212,12 +266,20 @@ def main(folder_read : str) -> None:
     # loss, mae, mse, huber
     
     loss_conv = conv_model.evaluate(testX, testY)
-    loss_lstm = lstm_model.evaluate(testX, testY)
-    loss_dense = dense_model.evaluate(testX, testY)
+    # loss_lstm = lstm_model.evaluate(testX, testY)
+    # loss_dense = dense_model.evaluate(testX, testY)
     
     print(f"Convolutional model loss: {loss_conv}")
-    print(f"LSTM model loss: {loss_lstm}")
-    print(f"Dense model loss: {loss_dense}")
+    
+    print("Prediction")
+    
+    prediction = conv_model.predict(testX)
+    print(f"prediction 0 :", prediction[0])
+    print(f"testX 0 :", testX[0])
+    print(f"testY 0 :", testY[0])
+    
+    # print(f"LSTM model loss: {loss_lstm}")
+    # print(f"Dense model loss: {loss_dense}")
     
     # prediction = lstm_model.predict(testX)
     # print(f"prediction 0 :", prediction[0])

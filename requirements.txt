@@ -1,4 +1,4 @@
-black
+# black
 click
 loguru
 pandas
@@ -11,8 +11,8 @@ statsmodels
 psycopg2
 numpy
 tensorflow
-arch.unitroot
-typing
+# arch.unitroot
+# typing
 scipy
 os
 flask 
