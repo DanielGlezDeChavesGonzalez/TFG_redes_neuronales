@@ -6,6 +6,9 @@ import pandas as pd
 import os
 import json
 import matplotlib.pyplot as plt
+import streamlit as st
+## Execution to work 
+# 1. Run the server with the command: python -m streamlit run request_server.py
 
 KERAS_REST_API_URL = "http://localhost:5000/predict"
 DATA_PATH = "./datos_peticion.csv"  # Reemplazar con la ruta del archivo de datos
@@ -62,3 +65,42 @@ if r["success"]:
         print("Error al obtener los resultados:", results)
 else:
     print("Error al enviar la solicitud:", r)
+
+# if 'post_response' not in st.session_state:
+#     st.session_state.post_response = {}
+
+# if 'get_response' not in st.session_state:
+#     st.session_state.get_response = {}
+
+# if 'file' not in st.session_state:
+#     st.session_state.file = None
+
+# if 'button_predict' not in st.session_state:
+#     st.session_state.button_predict = False
+    
+# def on_click(value):
+#     st.session_state.button_predict = value
+
+# st.session_state.file = st.file_uploader("Upload a csv to predict next steps", type=["csv"])
+
+# if st.session_state.file is not None:
+#     data = pd.read_csv(st.session_state.file, sep=';', names=['Timestamp', 'Value'])
+#     st.write(data)
+#     st.write("Data uploaded")
+
+#     st.button("Predict", on_click=on_click(True), kwargs=dict(value=not st.session_state.button_predict))
+
+#     if st.session_state.button_predict:
+#         st.write("Predicting...")
+#         st.session_state.post_response = requests.post("http://localhost:5000/predict", json={"data": data['Value'].tolist()})
+#         st.write(st.session_state.post_response.json())
+
+#     if st.button("Get results", disabled= not st.session_state.button_predict):
+#         st.write(st.session_state.post_response.json())
+#         task_id = st.session_state.post_response.json()['task_id']
+#         st.session_state.get_response = requests.get(f"http://localhost:5000/predict/results/{task_id}")
+#         st.write("Results:")
+#         st.write(st.session_state.get_response.json())
+
+# else:
+#     st.write("No file uploaded")

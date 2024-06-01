@@ -19,3 +19,4 @@ flask
 gevent 
 requests 
 pillow
+streamlit
