@@ -131,7 +131,7 @@ def adjust_batch_sizes(X, Y, expected_size_X, expected_size_Y):
     
 def data_generator(file_paths, batch_size, window_size, augmentations=[]):
     for file in file_paths:
-        print (f"File: {file}")
+        # print (f"File: {file}")
         data = read_and_combine_data(file)
         # print (f"Data head  {data[:5]}")
         X, Y = create_sequences(data, batch_size, window_size)
@@ -182,7 +182,7 @@ def main(folder_read : str) -> None:
     conv_model = Conv1D_model(n_outputs).model
     conv_model.summary()
     metrics_conv=[tf.metrics.MeanAbsoluteError()]
-    conv_model.compile(optimizer='adam', loss='mae', metrics=metrics_conv)
+    conv_model.compile(optimizer='adam', loss='mse', metrics=metrics_conv)
     checkpoint_filepath_conv = f'./weights/model_conv_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_conv = ModelCheckpoint(
         checkpoint_filepath_conv,
@@ -200,7 +200,7 @@ def main(folder_read : str) -> None:
     lstm_model = Lstm_model(n_outputs).model
     lstm_model.summary()
     metrics_lstm=[tf.metrics.MeanAbsoluteError()]
-    lstm_model.compile(optimizer='adam', loss='mae', metrics=metrics_lstm)
+    lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
     checkpoint_filepath_lstm = f'./weights/model_lstm_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_lstm = ModelCheckpoint(
         checkpoint_filepath_lstm,
@@ -218,7 +218,7 @@ def main(folder_read : str) -> None:
     dense_model = Dense_model(n_outputs).model
     dense_model.summary()
     metrics_dense=[tf.metrics.MeanAbsoluteError()]
-    dense_model.compile(optimizer='adam', loss='mae', metrics=metrics_dense)
+    dense_model.compile(optimizer='adam', loss='mse', metrics=metrics_dense)
     checkpoint_filepath_dense = f'./weights/model_dense_{model_version}_dataset_{dataset_version}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_dense = ModelCheckpoint(
         checkpoint_filepath_dense,
@@ -234,8 +234,10 @@ def main(folder_read : str) -> None:
     print("Training")
     train_gen = data_generator(file_paths, batch_size, n_outputs, augmentations)
     steps_per_epoch = sum([len(read_data_from_npz(f)) for f in file_paths]) // batch_size
-    
-    print (f"Steps per epoch: {steps_per_epoch}")
+
+    # for x, y in train_gen:
+    #     print(f'X: {x}, Y: {y}')
+    # print (f"Steps per epoch: {steps_per_epoch}")
     
     conv_model.fit(train_gen, epochs=10, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv])
 
