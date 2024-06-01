@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten
 
 class Lstm_model :
     
-    def __init__(self):
+    def __init__(self, n_outputs=10):
         self.model = Sequential([
             LSTM(100, input_shape=(32,1), return_sequences=True),
             Dropout(0.2),
@@ -16,7 +16,7 @@ class Lstm_model :
             LSTM(300, return_sequences=True),
             Dropout(0.2),
             Dense(100),
-            Dense(10)
+            Dense(n_outputs)
         ])
         
     def load_weights(self, path):
@@ -27,7 +27,7 @@ class Lstm_model :
 
 class Conv1D_model:
     
-    def __init__(self):
+    def __init__(self, n_outputs):
         self.model = Sequential([
             Conv1D(100, 2, activation='relu', input_shape=(32,1)),
             Conv1D(100, 2, activation='relu'),
@@ -45,7 +45,7 @@ class Conv1D_model:
             Flatten(),
             Dense(200),
             Dense(100),
-            Dense(10)
+            Dense(n_outputs)
         ])
         
     def load_weights(self, path):
@@ -56,7 +56,7 @@ class Conv1D_model:
 
 class Dense_model:
         
-    def __init__(self):
+    def __init__(self, n_outputs):
         self.model = Sequential([
             Dense(100, activation='relu', input_shape=(32,1)),
             Dropout(0.2),
@@ -66,7 +66,7 @@ class Dense_model:
             Dense(400, activation='relu'),
             Dropout(0.2),
             Dense(100),
-            Dense(10)
+            Dense(n_outputs)
         ])
         
     def load_weights(self, path):
