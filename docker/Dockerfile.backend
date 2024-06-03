@@ -1,0 +1,13 @@
+FROM flask:latest
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r ../requirements.txt
+
+COPY . .
+
+# el servidor flask se ejecuta en el puerto 5000 y esta en /scripts/server_flask.py 
+# cmd para ejecutar el servidor
+

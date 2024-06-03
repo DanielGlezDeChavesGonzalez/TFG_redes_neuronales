@@ -2,7 +2,7 @@
 **.csv
 **.txt
 datos_sensores/
-scripts/
+scripts_dados/
 __pycache__/
 datos_sensores_prueba/
 **.sql
