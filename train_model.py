@@ -220,20 +220,20 @@ def main(folder_read : str) -> None:
     ## PLOTTING---------------------------------------------
     
     # Asumiendo que testX, testY, prediction_conv, prediction_lstm, y prediction_dense son arrays de numpy
-    length = len(testX[0])
-    x = np.arange(length, 2*length)
+    # length = len(testX[0])
+    # x = np.arange(length, 2*length)
 
-    plt.figure(figsize=(20, 10))
-    plt.plot(testX[0], label='Input')
+    # plt.figure(figsize=(20, 10))
+    # plt.plot(testX[0], label='Input')
 
     # Concatenar testX con testY y las predicciones
-    plt.plot(np.concatenate([testX[0], testY[0]]), label='True')
-    plt.plot(np.concatenate([testX[0], prediction_conv[0]]), label='Prediction_conv')
-    plt.plot(np.concatenate([testX[0], prediction_lstm[0]]), label='Prediction_lstm')
-    plt.plot(np.concatenate([testX[0], prediction_dense[0]]), label='Prediction_dense')
+    # plt.plot(np.concatenate([testX[0], testY[0]]), label='True')
+    # plt.plot(np.concatenate([testX[0], prediction_conv[0]]), label='Prediction_conv')
+    # plt.plot(np.concatenate([testX[0], prediction_lstm[0]]), label='Prediction_lstm')
+    # plt.plot(np.concatenate([testX[0], prediction_dense[0]]), label='Prediction_dense')
 
-    plt.legend()
-    plt.show()
+    # plt.legend()
+    # plt.show()
     return None
 
 
