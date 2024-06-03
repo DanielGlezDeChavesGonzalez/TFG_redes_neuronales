@@ -5,6 +5,5 @@ datos_sensores/
 scripts_dados/
 __pycache__/
 datos_sensores_prueba/
-**.sql
 time_series.ipynb
 datos_npz/
