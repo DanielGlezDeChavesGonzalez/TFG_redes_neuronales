@@ -31,7 +31,7 @@ def load_best_model (num_outputs = 5):
     global model
     paths_outputs = []
     
-    for file in os.listdir(".\weights"):
+    for file in os.listdir("..\weights"):
         if file.split("_")[5] == str(num_outputs):
             paths_outputs.append(file)
         
@@ -39,7 +39,7 @@ def load_best_model (num_outputs = 5):
         loss = file.split("_")[6].split(".weights")[0]
         if float(loss) < current_loss:
             current_loss = float(loss)
-            best_model_path = os.path.join(".\weights", file)
+            best_model_path = os.path.join("..\weights", file)
     
     print(best_model_path)
     # print("------------------------------------")

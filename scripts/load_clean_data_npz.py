@@ -32,7 +32,7 @@ def load_data_from_folder(folder: str) -> Any:
     data = []
     for file in os.listdir(folder):
         # Lee el archivo CSV y asigna los nombres de las columnas
-        df = pd.read_csv(os.path.join(folder, file), sep=';', names=['Timestamp', 'Value'])
+        df = pd.read_csv(os.path.join(folder, file), sep=';', names=['Timestamp', 'Value'], float_precision='high')
         data.append(df)
         print(f"Data from file {file}")
         # print(data[-1].head())
@@ -96,18 +96,18 @@ def main(folder_read : str, folder_save: str) -> None:
     # print(f"Data will be saved in {folder_save}")
 
     if folder_read:
-        # python .\load_data.py --folder-read .\datos_sensores\ --folder-save .\datos_npz\
+        # python .\load_clean_data_npz.py --folder-read ..\datos_sensores\ --folder-save ..\datos_npz\
         logger.info(f"Data will be loaded from {folder_read}")
         data = load_data_from_folder(folder_read)
     else:
-        # python .\load_data.py
+        # python .\load_clean_data_npz.py
         logger.info(f"Data will be loaded from the database")
         data = load_data_from_database()
         
     data = cleaning(data)
         
     # python .\load_data.py
-    chunk_size = 10000
+    chunk_size = 100000
     unified_data = pd.concat(data)
     # sliced_data = slice_data(data, chunk_size)
     sliced_data = slice_data(unified_data, chunk_size)

@@ -1,21 +1,20 @@
 from tensorflow.keras.models import Sequential # type: ignore
-from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM # type: ignore
-
+from tensorflow.keras.layers import Dense, Dropout,Conv1D, MaxPooling1D, Flatten,LSTM , Lambda # type: ignore
+import tensorflow as tf
 
 class Lstm_model :
     
-    def __init__(self, n_outputs=10):
+    def __init__(self, n_outputs):
         self.model = Sequential([
-            LSTM(100, input_shape=(32,1), return_sequences=True),
+            Lambda(lambda x: tf.expand_dims(x, axis=-1), input_shape=[None]),
+            LSTM(64, return_sequences=True),
+            # Dropout(0.2),
+            LSTM(64, return_sequences=True),
+            LSTM(32, return_sequences=True),
+            # Dropout(0.2),
+            LSTM(32),
             Dropout(0.2),
-            LSTM(200, return_sequences=True),
-            LSTM(200, return_sequences=True),
-            LSTM(200, return_sequences=True),
-            LSTM(400, return_sequences=True),
-            Dropout(0.2),
-            LSTM(300, return_sequences=True),
-            Dropout(0.2),
-            Dense(100),
+            Dense(20),
             Dense(n_outputs)
         ])
         

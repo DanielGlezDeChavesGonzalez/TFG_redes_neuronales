@@ -100,6 +100,7 @@ def data_generator(file_paths, batch_size, window_size, augmentations=[]):
         Y = augmentation_operations(Y, augmentations)
 
         for i in range(0, len(X), batch_size):
+            # print(f"For file {file}")
             # print(f"Input shape: {X[i:i + batch_size].shape}, Target shape: {Y[i:i + batch_size].shape}")
             yield X[i:i + batch_size], Y[i:i + batch_size]
             
@@ -108,7 +109,7 @@ def data_generator(file_paths, batch_size, window_size, augmentations=[]):
 
 def main(folder_read : str) -> None:
             
-    # python .\loadandprep.py --folder-read .\datos_npz\
+    # python .\train_model.py --folder-read ..\datos_npz\
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
         
     # augmentations = ['normalize', 'add_noise', 'smooth', 'remove_outliers', 'remove_nans', 'remove_duplicates', 'magnitude_warping', 'scaling', 'time_warping']
@@ -131,7 +132,7 @@ def main(folder_read : str) -> None:
     conv_model.summary()
     metrics_conv=[tf.metrics.MeanAbsoluteError()]
     conv_model.compile(optimizer='adam', loss='mse', metrics=metrics_conv)
-    checkpoint_filepath_conv = f'./weights/model_conv_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
+    checkpoint_filepath_conv = f'../weights/model_conv_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_conv = ModelCheckpoint(
         checkpoint_filepath_conv,
         monitor='loss',            
@@ -149,7 +150,7 @@ def main(folder_read : str) -> None:
     lstm_model.summary()
     metrics_lstm=[tf.metrics.MeanAbsoluteError()]
     lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
-    checkpoint_filepath_lstm = f'./weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
+    checkpoint_filepath_lstm = f'../weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_lstm = ModelCheckpoint(
         checkpoint_filepath_lstm,
         monitor='loss',            
@@ -167,7 +168,7 @@ def main(folder_read : str) -> None:
     dense_model.summary()
     metrics_dense=[tf.metrics.MeanAbsoluteError()]
     dense_model.compile(optimizer='adam', loss='mse', metrics=metrics_dense)
-    checkpoint_filepath_dense = f'./weights/model_dense_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
+    checkpoint_filepath_dense = f'../weights/model_dense_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
     checkpoint_callback_dense = ModelCheckpoint(
         checkpoint_filepath_dense,
         monitor='loss',            
@@ -179,7 +180,7 @@ def main(folder_read : str) -> None:
     
     ## Training---------------------------------------------
     
-    num_epochs = 25
+    num_epochs = 1
         
     print("Training")
     train_gen = data_generator(file_paths, batch_size, n_outputs, augmentations)
@@ -187,35 +188,44 @@ def main(folder_read : str) -> None:
     
     print(f"Steps per epoch: {steps_per_epoch}")
     
-    conv_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv])
-    lstm_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_lstm])
-    dense_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_dense])
+    # conv_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv])
+    # No funciona
+    lstm_model.fit(train_gen, epochs=num_epochs, batch_size=batch_size, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_lstm]) 
+    # No funciona 
+    # dense_model.fit(train_gen, epochs=num_epochs, batch_size=batch_size, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_dense])
 
     ## EVALUATION---------------------------------------------
     print("Evaluation")
     test_gen = data_generator(file_paths, batch_size, n_outputs, augmentations)
 
-    loss_conv = conv_model.evaluate(test_gen, steps=steps_per_epoch)
-    print(f"Convolutional model loss: {loss_conv}")
+    # loss_conv = conv_model.evaluate(test_gen, steps=steps_per_epoch)
+    # print(f"Convolutional model loss: {loss_conv}")
     
     loss_lstm = lstm_model.evaluate(test_gen, steps=steps_per_epoch)
     print(f"LSTM model loss: {loss_lstm}")
     
-    loss_dense = dense_model.evaluate(test_gen, steps=steps_per_epoch)
-    print(f"Dense model loss: {loss_dense}")
+    # loss_dense = dense_model.evaluate(test_gen, steps=steps_per_epoch)
+    # print(f"Dense model loss: {loss_dense}")
     
     ## PREDICTION---------------------------------------------
     print("Prediction")
     test_gen = data_generator(file_paths, batch_size, n_outputs, augmentations)
     testX, testY = next(test_gen)
     
-    prediction_conv = conv_model.predict(testX)
-    prediction_lstm = lstm_model.predict(testX)
-    prediction_dense = dense_model.predict(testX)
+    # prediction_conv = conv_model.predict(testX)
+    dummy = testX[0].reshape((32,1))
     
-    print(f"Convolutional model prediction: {prediction_conv}")
+    print(f"TestX: {testX[0]}")
+    print(f"TestX shape: {testX[0].shape}")
+    print(f"dummy: {dummy}")
+    print(f"dummy shape: {dummy.shape}")
+    prediction_lstm = lstm_model.predict(dummy)
+    # prediction_dense = dense_model.predict(testX)
+    
+    # print(f"Convolutional model prediction: {prediction_conv}")
     print(f"LSTM model prediction: {prediction_lstm}")
-    print(f"Dense model prediction: {prediction_dense}")
+    print(f"True: {testY[0]}")
+    # print(f"Dense model prediction: {prediction_dense}")
     
     ## PLOTTING---------------------------------------------
     
