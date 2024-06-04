@@ -83,7 +83,7 @@ def pp_test(data: pd.Series):
 
 def read_data_from_csv(filename):
     print(f"Reading data from {filename}")
-    data = pd.read_csv(filename, sep=';', names=['Timestamp', 'Value'])
+    data = pd.read_csv(filename, sep=';', names=['Timestamp', 'Value'], float_precision='high')
     return data['Timestamp'], data['Value']
 
 def write_results_to_txt(results, filename):
