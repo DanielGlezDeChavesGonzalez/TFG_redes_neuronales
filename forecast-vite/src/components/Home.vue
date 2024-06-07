@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Chart from 'primevue/chart';
+// import FileUpload from 'primevue/fileupload';
 
 const file = ref<File | null>(null);
 const sumbmited = ref<boolean>(false);
@@ -45,6 +46,8 @@ const uploadFileCsv = (event: Event) => {
     }
 };
 
+const gotResults = ref<boolean>(false);
+
 const submitFile = () => {
     if (file.value) {
 
@@ -65,11 +68,6 @@ const submitFile = () => {
                 //     console.log('Error');
                 // }
                 console.log(response);
-
-                // wait for the task to finish
-                setTimeout(() => {
-                    getResults();
-                }, 5000);
             })
             .catch((error) => {
                 console.error(error);
@@ -81,13 +79,25 @@ const getResults = () => {
     axios.get(`http://localhost:5000/predict/results/${task_id.value}`).then((response) => {
         // Predictions: [ [ 0.9034325480461121, 0.9265543222427368, 0.9013111591339111, 0.9097467064857483, 0.8530929088592529 ] ]
         predictions.value = response.data.predictions[0];
+        // console.log(predictions.value);
         // console.log("predictions: ", predictions.value);
         chartData.value = setChartData();
         console.log(response);
     }).catch((error) => {
         console.error(error);
     });
+    gotResults.value = true;
 };
+
+
+// ECHARLE UNA PENSADA A ESTO PARA QUE NO SE QUEDE EN UN LOOP INFINITO DE PETICIONES AL SERVIDOR
+watch(task_id, () => {
+    if (task_id.value) {
+        while (!gotResults.value) {
+            getResults();
+        }
+    }
+});
 
 const chartData = ref();
 const chartOptions = ref();
@@ -153,6 +163,12 @@ const setChartOptions = () => {
 
         <div v-if="file == null || !sumbmited" class="submiting-form mt-2">
             <input type="file" class="input-file" @change="uploadFileCsv" />
+            <!-- <FileUpload mode="basic" @change="uploadFileCsv" @remove="file = null" accept=".csv"
+                :maxFileSize="1000000" class="input-file">
+                <template #empty>
+                    <p>Drag and drop files to here to upload.</p>
+                </template>
+</FileUpload> -->
             <p>Upload a CSV file to predict the future values of a time series</p>
 
             <p>File must have only 2 columns with the first one being the index and the second one the value</p>
@@ -178,12 +194,19 @@ const setChartOptions = () => {
             <p v-if="success">Success request</p>
             <p v-if="!success">Error</p>
 
-            <p v-if="!predictions.length">Waiting for the predictions</p>
-            <p v-if="predictions.length">Predictions: {{ predictions }}</p>
+            <div v-if="!gotResults">
+                <p>Waiting for the predictions</p>
 
-            <p>Graph with the predictions</p>
+            </div>
+            <div v-if="gotResults">
+                <p>Got the predictions</p>
+                <p>Predictions: {{ predictions }}</p>
+                <p>Graph with the predictions</p>
 
-            <Chart type="line" :data="chartData" :options="chartOptions" class="h-[300px] w-full" />
+                <Chart type="line" :data="chartData" :options="chartOptions" class="h-[300px] w-full" />
+            </div>
+
+
 
             <!-- A simple line chart with the predictions the original data in blue and the predictions concatenated in red will be shown here the size will be 400px height and 100% width -->
 

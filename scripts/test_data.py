@@ -8,157 +8,110 @@ import os
 from loguru import logger
 import numpy as np
 
-# augmented dickey fuller test represented with graphs with plt
-def adf_test(data: pd.Series):
-    # print("ADF Test-----------------------------------------")
-    values = data['Value']
-    
-    # Realizar la prueba de Dickey-Fuller en la columna 'Value'
-    result = adfuller(values)
-    
-    # # Imprimir los resultados
-    # print(f'ADF Statistic: {result[0]}')
-    # print(f'p-value: {result[1]}')
-    # print('Critical Values:')
-    # for key, value in result[4].items():
-    #     print(f'\t{key}: {value}')
-        
-    return result
-
-# Kwiatkowski-Phillips-Schmidt-Shin test represented with graphs with plt
-def kpss_test(data: pd.Series):
-    # print("KPSS Test-----------------------------------------")
-    values = data['Value']
-    
-    # Realizar la prueba de KPSS en la columna 'Value'
-    result = kpss(values)
-    
-    # Imprimir los resultados
-    # print(f'KPSS Statistic: {result[0]}')
-    # print(f'p-value: {result[1]}')
-    # print('Critical Values:')
-    # for key, value in result[3].items():
-    #     print(f'\t{key}: {value}')
-        
-    return result
-        
-# Phillips-Perron test represented with graphs with plt
-def pp_test(data: pd.Series):
-    # print("PP Test-----------------------------------------")
-    values = data['Value']
-    
-    # Realizar la prueba de Phillips-Perron en la columna 'Value'
-    result = PhillipsPerron(values)
-    
-    # Imprimir los resultados
-    # print(f'PP Statistic: {result.stat}')
-    # print(f'p-value: {result.pvalue}')
-    # print(f'Critical Values: {result.critical_values}')
-    # print(f'Null Hypothesis: {result.null_hypothesis}')
-    # print(f'Alternative Hypothesis: {result.alternative_hypothesis}')
-            
-    return result
-
-# Autocorrelation and Partial Autocorrelation Function represented with graphs with plt
-# def acf_pacf(data: pd.Series):
-    # print("ACF and PACF-----------------------------------------")
-    # values = data['Value']
-    # Crear una figura con un panel dividido en 1 fila y 2 columnas
-    # plt.figure(figsize=(12, 5))
-    # # Gráfico de la función de autocorrelación
-    # plt.subplot(2, 1, 1)
-    # plot_acf(values, ax=plt.gca())
-    # plt.title(f'ACF')
-    # # Gráfico de la función de autocorrelación parcial
-    # plt.subplot(2, 1, 2)
-    # plot_pacf(values, ax=plt.gca())
-    # plt.title(f'PACF')
-    # # Ajustar los gráficos
-    # plt.subplots_adjust(hspace=0.5)
-    # # Mostrar los gráficos
-    # plt.show()
-    
-    # Devolver los valores de la función de autocorrelación y autocorrelación parcial
-    # return plot_acf(values), plot_pacf(values)
-
 def read_data_from_csv(filename):
-    print(f"Reading data from {filename}")
-    data = pd.read_csv(filename, sep=';', names=['Timestamp', 'Value'], float_precision='high')
-    return data['Timestamp'], data['Value']
+    df = pd.read_csv(filename, sep=';', names=['Timestamp', 'Value'], 
+                     float_precision='high', dtype={'Timestamp': 'int32', 'Value': 'float32'})
+    
+    return df['Timestamp'].values, df['Value'].values
 
-def write_results_to_txt(results, filename):
+def write_results_to_txt(results, file_save):
+    with open(file_save, 'a') as file:
+        file.write(results + '\n')
+
+def process_adf( filename, value, file_save):
+    print(f"Processing file {filename}")
+
+    results_adf = adfuller(value)
     
-    # Si el archivo no existe, se crea
-    if not os.path.exists(filename):
-        with open(filename, 'w') as f:
-            f.write(results)
-    # Si el archivo ya existe, se sobreescribe
+    results = (
+        f"Filename: {filename}\n"
+        f"ADF Test:\nADF Statistic: {results_adf[0]}\n"
+        f"p-value: {results_adf[1]}\n"
+        f"Critical Values: {results_adf[4]}\n"
+    )
+    print("Results: ", results)
+
+    write_results_to_txt(results, file_save)
     
-    else:
-        with open(filename, 'w') as f:
-            f.write(results)
-            
-    print(f"Results saved in {filename}")
-        
+def process_pp( filename, value, file_save):
+    print(f"Processing file {filename}")
+
+    results_pp = PhillipsPerron(value)
+
+    results = (
+        f"Filename: {filename}\n"
+        f"Phillips-Perron Test:\n"
+        f"PP Statistic: {results_pp.stat}\n"
+        f"p-value: {results_pp.pvalue}\n"
+        f"Critical Values: {results_pp.critical_values}\n"
+    )
+    print("Results: ", results)
+
+    write_results_to_txt(results, file_save)
+    
+def process_kpss( filename, value, file_save):
+    print(f"Processing file {filename}")
+
+    results_kpss = kpss(value)
+
+    results = (
+        f"Filename: {filename}\n"
+        f"KPSS Test:\n"
+        f"KPSS Statistic: {results_kpss[0]}\n"
+        f"p-value: {results_kpss[1]}\n"
+        f"Critical Values: {results_kpss[3]}\n"
+    )
+    print("Results: ", results)
+
+    write_results_to_txt(results, file_save)
 
 @click.command()
 @click.option('--folder-read', type=str, default='.', help="Folder where the data is stored.")
-@click.option('--file-save', type=str, default='.', help="File where the results are saved.")
-
-def main(folder_read : str , file_save : str) -> None:
-    
+@click.option('--file-save', type=str, default='results.txt', help="File where the results are saved.")
+def main(folder_read: str, file_save: str) -> None:
     if not folder_read:
         logger.error("No folder was provided")
         return
-    
+
     if not file_save:
         logger.error("No file was provided")
         return
-    
-    # Ejecutar el script con los siguientes argumentos
-    # python test_data.py --folder-read .\datos_sensores\ --file-save resultados_test.txt
-    
-    all_timestamps = []
-    all_values = []
-            
-    file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
 
-    for file in file_paths:
-        timestamps, values = read_data_from_csv(file)
-        all_timestamps.extend(timestamps)
-        all_values.extend(values)
+    file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read) if f.endswith('.csv')]
+    
+    print(f"Reading data from {len(file_paths)} files")
+    
+    if not os.path.exists(file_save):
+        open(file_save, 'w').close()
         
-    print(f"Data read from {len(file_paths)} files")
-    
-    df = pd.DataFrame({'Timestamp': all_timestamps, 'Value': all_values})
-    # print(df.head())
-    results_adf = adf_test(df)
-    results_kpss = kpss_test(df)
-    # results_acf_pacf = acf_pacf(df)
-    results_pp = pp_test(df)
-    
-    print("Results obtained")
-    
-    # guardar resultados en un archivo de texto 
-    
-    results = f"ADF Test:\nADF Statistic: {results_adf[0]}\nKPSS Test: {results_kpss}\nPP Test: {results_pp}"
-    
-    print(f"Results ADF: ")
-    print(results_adf)
-    print(f"-----------------------------------------")
-
-    print(f"Results KPSS: ")
-    print(results_kpss)
-    print(f"-----------------------------------------")
-    
-    print(f"Results PP: ")
-    print(results_pp)
-
-    
-    write_results_to_txt(results, file_save)
-    
+    for file in file_paths:
+        print("Processing file adf: ", file)
+        timestamp, value = read_data_from_csv(file)
+        eight_parts = np.array_split(value, 16)
+        
+        for i in range(4, 8):
+            process_adf(file + f"_part_{i}", eight_parts[i], file_save)
+        
+    for file in file_paths:
+        print("Processing file pp: ", file)
+        timestamp, value = read_data_from_csv(file)
+        eight_parts = np.array_split(value, 16)
+        
+        for i in range(4, 8):
+            process_pp(file + f"_part_{i}", eight_parts[i], file_save)
+        
+        
+                
+    for file in file_paths:
+        print("Processing file kpss: ", file)
+        timestamp, value = read_data_from_csv(file)
+        eight_parts = np.array_split(value, 16)
+        
+        for i in range(4, 8):
+            process_kpss(file + f"_part_{i}", eight_parts[i], file_save)
+        
     print("Results saved")
-    
+
 if __name__ == '__main__':
     main()
-    
+

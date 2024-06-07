@@ -33,6 +33,14 @@ def load_data_from_folder(folder: str) -> Any:
     for file in os.listdir(folder):
         # Lee el archivo CSV y asigna los nombres de las columnas
         df = pd.read_csv(os.path.join(folder, file), sep=';', names=['Timestamp', 'Value'], float_precision='high')
+        
+        # Limpieza de los datos
+        df = cleaning([df])[0]
+        
+        # asigna el nombre del archivo a la columna 'File'
+        df['File'] = file
+        # print(f"Dataframe start: {df.head()}")
+        
         data.append(df)
         print(f"Data from file {file}")
         # print(data[-1].head())
@@ -83,7 +91,7 @@ def create_npz(data, filename, folder_save ):
     values = data['Value']
     if not os.path.exists(folder_save):
         os.makedirs(folder_save)
-    np.savez(os.path.join(folder_save, filename), Timestamp=timestamps, Value=values)
+    np.savez_compressed(os.path.join(folder_save, filename), Timestamp=timestamps, Value=values)
     print(f"Data has been successfully saved in {filename}")
 
 @click.command()
@@ -103,18 +111,28 @@ def main(folder_read : str, folder_save: str) -> None:
         # python .\load_clean_data_npz.py
         logger.info(f"Data will be loaded from the database")
         data = load_data_from_database()
-        
-    data = cleaning(data)
+            
+    for i, data_file in enumerate(data):
+        data_file_name = data_file['File'].iloc[0]
+        # remove the column 'File' from the data            
+        data_file = data_file.drop(columns=['File'])
+        data_chunked = slice_data(data_file, 1000000)
+        for j, data_chunk in enumerate(data_chunked):
+            create_npz(data_chunk, f"{data_file_name}_{j}.npz", folder_save)
+            print(f"Data has been successfully saved in {data_file_name}_{j}.npz")
         
     # python .\load_data.py
-    chunk_size = 100000
-    unified_data = pd.concat(data)
+    # chunk_size = 100000
+    # unified_data = pd.concat(data)
+    
     # sliced_data = slice_data(data, chunk_size)
-    sliced_data = slice_data(unified_data, chunk_size)
-    for idx, chunk in enumerate(sliced_data):
-        npz_filename = f'data_chunk_{idx}.npz'
-        create_npz(chunk, npz_filename, folder_save)
-    print("Data has been successfully saved in NPZ format.")
+    
+    # sliced_data = slice_data(unified_data, chunk_size)
+    # for i, data_chunk in enumerate(sliced_data):
+    #     create_npz(data_chunk, f"data_{i}.npz", folder_save)
+    # print("Data has been successfully saved in NPZ format.")
+    
+    
     
 if __name__ == '__main__':
     main()
