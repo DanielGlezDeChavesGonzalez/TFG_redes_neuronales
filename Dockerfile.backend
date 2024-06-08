@@ -1,0 +1,17 @@
+FROM python:latest
+
+WORKDIR /app
+
+COPY ./requirements.txt .
+
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./scripts/server_flask.py .
+COPY ./best_weights/ ./weights
+
+EXPOSE 5000
+ENV FLASK_APP=server_flask.py
+
+CMD ["python", "server_flask.py"]
+

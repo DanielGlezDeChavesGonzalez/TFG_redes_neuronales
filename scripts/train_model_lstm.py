@@ -5,17 +5,7 @@ import click
 from scipy import stats
 import os
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
-from model_creators import Lstm_model, Conv1D_model, Dense_model
 from matplotlib import pyplot as plt
-# from loguru import logger
-# from typing import Any, Callable
-# import pandas as pd
-# from sqlalchemy import create_engine
-# import seaborn as sns
-# import IPython
-# import IPython.display
-# import dask.dataframe as dd
-# from tensorflow.keras.models import Sequential # type: ignore
 
 def augmentation_operations(data, augmentations):
     augmented_data = np.array(data.copy())
@@ -97,12 +87,21 @@ def main(folder_read: str) -> None:
 
     model_version = 1
     dataset_version = 1
+    
+    lstm_model = tf.keras.Sequential([
+            tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(32,1)),
+            tf.keras.layers.LSTM(64, return_sequences=True),
+            tf.keras.layers.LSTM(32, return_sequences=True),
+            tf.keras.layers.LSTM(32),
+            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dense(20),
+            tf.keras.layers.Dense(n_outputs)
+        ])
 
     print("LSTM model")
-    lstm_model = Lstm_model(n_outputs).model
     lstm_model.summary()
     metrics_lstm = [tf.metrics.MeanAbsoluteError()]
-    lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
+    lstm_model.compile(optimizer='adam', loss='mae', metrics=metrics_lstm)
     checkpoint_filepath_lstm = f'../weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
     checkpoint_callback_lstm = ModelCheckpoint(
         checkpoint_filepath_lstm,
@@ -117,7 +116,7 @@ def main(folder_read: str) -> None:
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     
-    steps_per_epoch = sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size
+    steps_per_epoch = (sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size) // num_epochs
     print(f"Steps per epoch: {steps_per_epoch}")
 
     for batch_X, batch_Y in train_gen:

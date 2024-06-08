@@ -1,4 +1,3 @@
-# black
 click
 loguru
 pandas
@@ -11,10 +10,7 @@ statsmodels
 psycopg2
 numpy
 tensorflow
-# arch.unitroot
-# typing
 scipy
-os
 flask 
 gevent 
 requests 

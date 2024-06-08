@@ -5,17 +5,7 @@ import click
 from scipy import stats
 import os
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
-from model_creators import Lstm_model, Conv1D_model, Dense_model
 from matplotlib import pyplot as plt
-# from loguru import logger
-# from typing import Any, Callable
-# import pandas as pd
-# from sqlalchemy import create_engine
-# import seaborn as sns
-# import IPython
-# import IPython.display
-# import dask.dataframe as dd
-# from tensorflow.keras.models import Sequential # type: ignore
 
 def augmentation_operations(data, augmentations):
     augmented_data = np.array(data.copy())
@@ -99,10 +89,26 @@ def main(folder_read: str) -> None:
     dataset_version = 1
     
     print("Conv1D model")
-    conv1d_model = Conv1D_model(n_outputs).model
+    conv1d_model = tf.keras.Sequential([
+            tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(32,1)),
+            tf.keras.layers.Conv1D(32, 2, activation='relu'),
+            tf.keras.layers.MaxPooling1D(2),
+            tf.keras.layers.Conv1D(64, 2, activation='relu'),
+            tf.keras.layers.Conv1D(64, 2, activation='relu'),
+            tf.keras.layers.MaxPooling1D(2),
+            tf.keras.layers.Conv1D(128, 2, activation='relu'),
+            tf.keras.layers.Conv1D(32, 2, activation='relu'),
+            # tf.keras.layers.# MaxPooling1D(2),
+            tf.keras.layers.Conv1D(200, 2, activation='relu'),
+            # tf.keras.layers.# MaxPooling1D(2),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(100),
+            tf.keras.layers.Dense(n_outputs)
+        ])
+    
     conv1d_model.summary()
     metrics_conv1d = [tf.metrics.MeanAbsoluteError()]
-    conv1d_model.compile(optimizer='adam', loss='mse', metrics=metrics_conv1d)
+    conv1d_model.compile(optimizer='adam', loss='mae', metrics=metrics_conv1d)
     checkpoint_filepath_conv1d = f'../weights/model_conv1d_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
     checkpoint_callback_conv1d = ModelCheckpoint(
         checkpoint_filepath_conv1d,
@@ -117,7 +123,7 @@ def main(folder_read: str) -> None:
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     
-    steps_per_epoch = sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size
+    steps_per_epoch = (sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size) // num_epochs
     print(f"Steps per epoch: {steps_per_epoch}")
 
     for batch_X, batch_Y in train_gen:
