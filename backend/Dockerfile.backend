@@ -2,13 +2,12 @@ FROM python:latest
 
 WORKDIR /app
 
-COPY ./requirements.txt .
+COPY requirements_backend.txt .
 
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_backend.txt
 
-COPY ./scripts/server_flask.py .
-COPY ./best_weights/ ./weights
+COPY . .
 
 EXPOSE 5000
 ENV FLASK_APP=server_flask.py

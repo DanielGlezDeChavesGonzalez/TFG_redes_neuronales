@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import Chart from 'primevue/chart';
 // import FileUpload from 'primevue/fileupload';
@@ -55,18 +55,24 @@ const submitFile = () => {
             data: data.value,
         };
 
+        // console.log(payload);
+
         axios.post('http://localhost:5000/predict', payload)
             .then((response) => {
+        
                 task_id.value = response.data.task_id;
                 success.value = response.data.success;
                 // console.log("task_id: ", task_id.value);
                 // console.log("success: ", success.value);
                 sumbmited.value = true;
-                // if (success.value) {
-                //     console.log('Success');
-                // } else {
-                //     console.log('Error');
-                // }
+                if (success.value) {
+                    console.log('Success');
+                    setTimeout(() => {
+                        getResults();
+                    }, 5000);
+                } else {
+                    console.log('Error');
+                }
                 console.log(response);
             })
             .catch((error) => {
@@ -78,7 +84,8 @@ const submitFile = () => {
 const getResults = () => {
     axios.get(`http://localhost:5000/predict/results/${task_id.value}`).then((response) => {
         // Predictions: [ [ 0.9034325480461121, 0.9265543222427368, 0.9013111591339111, 0.9097467064857483, 0.8530929088592529 ] ]
-        predictions.value = response.data.predictions[0];
+        // console.log(response.data);
+        predictions.value = response.data.predictions;
         // console.log(predictions.value);
         // console.log("predictions: ", predictions.value);
         chartData.value = setChartData();
@@ -91,13 +98,13 @@ const getResults = () => {
 
 
 // ECHARLE UNA PENSADA A ESTO PARA QUE NO SE QUEDE EN UN LOOP INFINITO DE PETICIONES AL SERVIDOR
-watch(task_id, () => {
-    if (task_id.value) {
-        while (!gotResults.value) {
-            getResults();
-        }
-    }
-});
+// watch(task_id, () => {
+//     if (task_id.value) {
+//         setInterval(() => {
+//             getResults();
+//         }, 5000);
+//     }
+// });
 
 const chartData = ref();
 const chartOptions = ref();

@@ -10,11 +10,28 @@ from flask_cors import CORS # type: ignore
 
 
 # Inicializar la conexión a Redis
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='redis', port=6379, db=0)
+# r = redis.Redis(host='localhost', port=6379, db=0)
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
-model = None
-    
+model = tf.keras.Sequential([
+            tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(32,1)),
+            tf.keras.layers.Conv1D(32, 2, activation='relu'),
+            tf.keras.layers.MaxPooling1D(2),
+            tf.keras.layers.Conv1D(64, 2, activation='relu'),
+            tf.keras.layers.Conv1D(64, 2, activation='relu'),
+            tf.keras.layers.MaxPooling1D(2),
+            tf.keras.layers.Conv1D(128, 2, activation='relu'),
+            tf.keras.layers.Conv1D(32, 2, activation='relu'),
+            # tf.keras.layers.# MaxPooling1D(2),
+            tf.keras.layers.Conv1D(200, 2, activation='relu'),
+            # tf.keras.layers.# MaxPooling1D(2),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(100),
+            tf.keras.layers.Dense(5)
+        ])
+        
 # def load_best_model (num_outputs = 5):
     
 #     # checkpoint_filepath_lstm = f'./weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
@@ -77,9 +94,11 @@ def process_task_queue():
             print (f"Data: {data}")
             
             # Reshape the data to the expected input shape of the model
-            data = data.reshape(-1, 32, 1)
+            data = data.reshape(1, 32, 1)
             
             preds = model.predict(data)
+            
+            preds = preds.flatten()
             
             print(f"Task {task_id} completed")
             # print(f"Data: {data}")
@@ -157,26 +176,17 @@ def run_task_queue_worker():
 def main(num_output : int) -> None:
     print("* Loading Keras model and Flask starting server...")
     print("Please wait until the server has fully started")
-    path_model = "./model_conv1d_modelversion_1_outputs_5_0.1524861008.weights.h5"
+    path_model = "model_conv1d_modelversion_1_outputs_5_0.0799928010.weights.h5"
     # load_best_model(num_output)
-    lstm_model = tf.keras.Sequential([
-            tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(32,1)),
-            # Dropout(0.2),
-            tf.keras.layers.LSTM(64, return_sequences=True),
-            tf.keras.layers.LSTM(32, return_sequences=True),
-            # Dropout(0.2),
-            tf.keras.layers.LSTM(32),
-            tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(20),
-            tf.keras.layers.Dense(num_output)
-        ])
-    
-    lstm_model.load_weights(path_model)
+   
+    model.load_weights(path_model)
     # Iniciar un hilo separado para procesar la cola de tareas
     worker_thread = threading.Thread(target=run_task_queue_worker)
     worker_thread.start()
     
-    app.run()
+    # app.run()
+    app.run(host='0.0.0.0', port=5000)
+
 
 if __name__ == "__main__":
     main()

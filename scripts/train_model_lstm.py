@@ -60,19 +60,20 @@ def create_sequences(data, window_size, n_outputs):
     return X, Y
 
 def data_generator(file_paths, batch_size, window_size, n_outputs, augmentations=[]):
-    for file in file_paths:
-        data = read_and_combine_data(file)
-        X, Y = create_sequences(data, window_size, n_outputs)
-        #print(f"data_generator -> X shape: {X.shape}, Y shape: {Y.shape}")
+    while True:
+        for file in file_paths:
+            data = read_and_combine_data(file)
+            X, Y = create_sequences(data, window_size, n_outputs)
+            #print(f"data_generator -> X shape: {X.shape}, Y shape: {Y.shape}")
 
-        for i in range(0, len(X) - batch_size + 1, batch_size):
-            batch_X = X[i:i + batch_size]
-            batch_Y = Y[i:i + batch_size]
-            batch_X = augmentation_operations(batch_X, augmentations)
-            batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
+            for i in range(0, len(X) - batch_size + 1, batch_size):
+                batch_X = X[i:i + batch_size]
+                batch_Y = Y[i:i + batch_size]
+                batch_X = augmentation_operations(batch_X, augmentations)
+                batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
 
-            #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
-            yield batch_X, batch_Y
+                #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                yield batch_X, batch_Y
             
 @click.command()
 @click.option('--folder-read', type=str, default='./datos_npz/', help="Folder where the data is stored.")
@@ -92,7 +93,6 @@ def main(folder_read: str) -> None:
             tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(32,1)),
             tf.keras.layers.LSTM(64, return_sequences=True),
             tf.keras.layers.LSTM(32, return_sequences=True),
-            tf.keras.layers.LSTM(32),
             tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(20),
             tf.keras.layers.Dense(n_outputs)
@@ -112,7 +112,7 @@ def main(folder_read: str) -> None:
         verbose=1
     )
 
-    num_epochs = 10
+    num_epochs = 50
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     

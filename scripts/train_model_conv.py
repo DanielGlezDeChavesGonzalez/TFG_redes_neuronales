@@ -60,20 +60,21 @@ def create_sequences(data, window_size, n_outputs):
     return X, Y
 
 def data_generator(file_paths, batch_size, window_size, n_outputs, augmentations=[]):
-    for file in file_paths:
-        data = read_and_combine_data(file)
-        X, Y = create_sequences(data, window_size, n_outputs)
-        #print(f"data_generator -> X shape: {X.shape}, Y shape: {Y.shape}")
+    while True:
+        for file in file_paths:
+            data = read_and_combine_data(file)
+            X, Y = create_sequences(data, window_size, n_outputs)
+            #print(f"data_generator -> X shape: {X.shape}, Y shape: {Y.shape}")
 
-        for i in range(0, len(X) - batch_size + 1, batch_size):
-            batch_X = X[i:i + batch_size]
-            batch_Y = Y[i:i + batch_size]
-            batch_X = augmentation_operations(batch_X, augmentations)
-            batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
+            for i in range(0, len(X) - batch_size + 1, batch_size):
+                batch_X = X[i:i + batch_size]
+                batch_Y = Y[i:i + batch_size]
+                batch_X = augmentation_operations(batch_X, augmentations)
+                batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
 
-            #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
-            yield batch_X, batch_Y
-            
+                #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                yield batch_X, batch_Y
+                
 @click.command()
 @click.option('--folder-read', type=str, default='./datos_npz/', help="Folder where the data is stored.")
 
@@ -119,7 +120,7 @@ def main(folder_read: str) -> None:
         verbose=1
     )
 
-    num_epochs = 10
+    num_epochs = 50
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     
@@ -138,14 +139,14 @@ def main(folder_read: str) -> None:
         print(f"Evaluation batch -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
         break
 
-    loss_lstm = conv1d_model.evaluate(test_gen, steps=steps_per_epoch)
-    print(f"LSTM model loss: {loss_lstm}")
+    loss_conv = conv1d_model.evaluate(test_gen, steps=steps_per_epoch)
+    print(f"conv model loss: {loss_conv}")
 
     print("Prediction")
     test_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     testX, testY = next(test_gen)
 
-    # Reshape the input to have the correct shape for LSTM model prediction
+    # Reshape the input to have the correct shape for conv model prediction
     dummy = testX[0].reshape((1, 32, 1))  # (1, sequence_length, 1)
 
 
@@ -154,10 +155,10 @@ def main(folder_read: str) -> None:
     print(f"dummy: {dummy.flatten()}")
     print(f"dummy shape: {dummy.shape}")
 
-    prediction_lstm = conv1d_model.predict(dummy)
-    prediction_lstm = prediction_lstm.flatten()  # Flatten the prediction to match true values shape
+    prediction_conv = conv1d_model.predict(dummy)
+    prediction_conv = prediction_conv.flatten()  # Flatten the prediction to match true values shape
 
-    print(f"LSTM model prediction: {prediction_lstm}")
+    print(f"conv model prediction: {prediction_conv}")
     print(f"True: {testY[0]}")
 
     return None
