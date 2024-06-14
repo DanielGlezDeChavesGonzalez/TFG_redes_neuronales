@@ -88,7 +88,7 @@ def main(folder_read: str) -> None:
     file_paths = [f for f in file_paths if banc in f]
     print(f"File paths: {file_paths}")    
     
-    augmentations = []
+    augmentations = ['add_noise']
     batch_size = 32
     window_size = 32
     n_outputs = 5
