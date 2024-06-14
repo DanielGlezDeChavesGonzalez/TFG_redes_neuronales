@@ -69,7 +69,7 @@ const submitFile = () => {
                     console.log('Success');
                     setTimeout(() => {
                         getResults();
-                    }, 5000);
+                    }, 3000);
                 } else {
                     console.log('Error');
                 }

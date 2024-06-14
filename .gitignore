@@ -7,3 +7,6 @@ __pycache__/
 datos_sensores_prueba/
 time_series.ipynb
 datos_npz/
+weights/
+weights_no_noise/
+**.h5

@@ -87,28 +87,31 @@ def main(folder_read: str, file_save: str) -> None:
     for file in file_paths:
         print("Processing file adf: ", file)
         timestamp, value = read_data_from_csv(file)
-        eight_parts = np.array_split(value, 16)
+        process_adf(file, value, file_save)
+        # eight_parts = np.array_split(value, 16)
         
-        for i in range(4, 8):
-            process_adf(file + f"_part_{i}", eight_parts[i], file_save)
+        # for i in range(4, 8):
+        #     process_adf(file + f"_part_{i}", eight_parts[i], file_save)
         
     for file in file_paths:
         print("Processing file pp: ", file)
         timestamp, value = read_data_from_csv(file)
-        eight_parts = np.array_split(value, 16)
+        process_kpss(file, value, file_save)
+        # eight_parts = np.array_split(value, 16)
         
-        for i in range(4, 8):
-            process_pp(file + f"_part_{i}", eight_parts[i], file_save)
+        # for i in range(4, 8):
+        #     process_pp(file + f"_part_{i}", eight_parts[i], file_save)
         
         
                 
     for file in file_paths:
         print("Processing file kpss: ", file)
         timestamp, value = read_data_from_csv(file)
-        eight_parts = np.array_split(value, 16)
+        process_pp(file, value, file_save)
+        # eight_parts = np.array_split(value, 16)
         
-        for i in range(4, 8):
-            process_kpss(file + f"_part_{i}", eight_parts[i], file_save)
+        # for i in range(4, 8):
+        #     process_kpss(file + f"_part_{i}", eight_parts[i], file_save)
         
     print("Results saved")
 

@@ -6,6 +6,7 @@ from scipy import stats
 import os
 from tensorflow.keras.callbacks import ModelCheckpoint # type: ignore
 from matplotlib import pyplot as plt
+from tensorflow.keras.optimizers import Adadelta # type: ignore
 
 def augmentation_operations(data, augmentations):
     augmented_data = np.array(data.copy())
@@ -72,15 +73,22 @@ def data_generator(file_paths, batch_size, window_size, n_outputs, augmentations
                 batch_X = augmentation_operations(batch_X, augmentations)
                 batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
 
-                #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                # print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                # print(f"batch_X: {batch_X}")
+                # print(f"batch_Y: {batch_Y}")
                 yield batch_X, batch_Y
                 
 @click.command()
 @click.option('--folder-read', type=str, default='./datos_npz/', help="Folder where the data is stored.")
 
 def main(folder_read: str) -> None:
+    banc = "banc_1.csv"
+    
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
-    augmentations = ['add_noise']
+    file_paths = [f for f in file_paths if banc in f]
+    print(f"File paths: {file_paths}")    
+    
+    augmentations = []
     batch_size = 32
     window_size = 32
     n_outputs = 5
@@ -107,10 +115,12 @@ def main(folder_read: str) -> None:
             tf.keras.layers.Dense(n_outputs)
         ])
     
+    # optimizer = Adadelta(learning_rate=0.01)
     conv1d_model.summary()
     metrics_conv1d = [tf.metrics.MeanAbsoluteError()]
-    conv1d_model.compile(optimizer='adam', loss='mae', metrics=metrics_conv1d)
-    checkpoint_filepath_conv1d = f'../weights/model_conv1d_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
+    conv1d_model.compile(optimizer='adam', loss='mse', metrics=metrics_conv1d)
+    # conv1d_model.compile(optimizer=optimizer, loss='mse', metrics=metrics_conv1d)
+    checkpoint_filepath_conv1d = f'../weights/model_conv1d{banc}_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
     checkpoint_callback_conv1d = ModelCheckpoint(
         checkpoint_filepath_conv1d,
         monitor='loss',
@@ -120,18 +130,20 @@ def main(folder_read: str) -> None:
         verbose=1
     )
 
-    num_epochs = 50
+    num_epochs = 25
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     
     steps_per_epoch = (sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size) // num_epochs
+    # steps_per_epoch = 5
+
     print(f"Steps per epoch: {steps_per_epoch}")
 
     for batch_X, batch_Y in train_gen:
         print(f"Training batch -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
         break
 
-    conv1d_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv1d])
+    history = conv1d_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_conv1d])
 
     print("Evaluation")
     test_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
@@ -160,6 +172,15 @@ def main(folder_read: str) -> None:
 
     print(f"conv model prediction: {prediction_conv}")
     print(f"True: {testY[0]}")
+    
+    print(f"loss per epoch: {history.history['loss']}")
+    
+    ## print model loss progression
+    plt.plot(history.history['loss'])
+    plt.title('Model loss: ' + banc)
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.show()
 
     return None
 

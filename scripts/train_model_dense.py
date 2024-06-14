@@ -73,15 +73,22 @@ def data_generator(file_paths, batch_size, window_size, n_outputs, augmentations
                 batch_X = augmentation_operations(batch_X, augmentations)
                 batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
 
-                #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                # print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                # print(f"batch_X: {batch_X}")
+                # print(f"batch_Y: {batch_Y}")
                 yield batch_X, batch_Y
                     
 @click.command()
 @click.option('--folder-read', type=str, default='./datos_npz/', help="Folder where the data is stored.")
 
 def main(folder_read: str) -> None:
+    banc = "banc_1.csv"
+    
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
-    augmentations = ['add_noise']
+    file_paths = [f for f in file_paths if banc in f]
+    print(f"File paths: {file_paths}")    
+    
+    augmentations = []
     batch_size = 32
     window_size = 32
     n_outputs = 5
@@ -100,8 +107,8 @@ def main(folder_read: str) -> None:
     dense_model.summary()
     
     metrics_dense = [tf.metrics.MeanAbsoluteError()]
-    dense_model.compile(optimizer='adam', loss='mae', metrics=metrics_dense)
-    checkpoint_filepath_dense = f'../weights/model_dense_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
+    dense_model.compile(optimizer='adam', loss='mse', metrics=metrics_dense)
+    checkpoint_filepath_dense = f'../weights/model_dense{banc}_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
     checkpoint_callback_dense = ModelCheckpoint(
         checkpoint_filepath_dense,
         monitor='loss',
@@ -111,22 +118,19 @@ def main(folder_read: str) -> None:
         verbose=1
     )
 
-    num_epochs = 50
+    num_epochs = 25
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
-    largo = sum([len(read_data_from_npz(f)[1]) for f in file_paths])
-    print("largo ", largo)
-    largo_batch = largo // batch_size
-    print("largo_batch ", largo_batch)
     
     steps_per_epoch = (sum([len(read_data_from_npz(f)[1]) for f in file_paths]) // batch_size) // num_epochs
+
     print(f"Steps per epoch: {steps_per_epoch}")
 
     for batch_X, batch_Y in train_gen:
         print(f"Training batch -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
         break
 
-    dense_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_dense])
+    history = dense_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_dense])
 
     print("Evaluation")
     test_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
@@ -153,8 +157,17 @@ def main(folder_read: str) -> None:
     prediction_dense = dense_model.predict(dummy)
     prediction_dense = prediction_dense.flatten()  # Flatten the prediction to match true values shape
 
-    print(f"LSTM model prediction: {prediction_dense}")
+    print(f"Dnese model prediction: {prediction_dense}")
     print(f"True: {testY[0]}")
+    
+    print(f"loss per epoch: {history.history['loss']}")
+
+    ## print model loss progression
+    plt.plot(history.history['loss'])
+    plt.title('Model loss: '+ banc)
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.show()
 
     return None
 

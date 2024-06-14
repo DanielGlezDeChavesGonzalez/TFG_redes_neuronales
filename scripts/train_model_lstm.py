@@ -72,14 +72,23 @@ def data_generator(file_paths, batch_size, window_size, n_outputs, augmentations
                 batch_X = augmentation_operations(batch_X, augmentations)
                 batch_Y = augmentation_operations(batch_Y.reshape(-1, n_outputs), augmentations)  # No need to flatten
 
-                #print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                # print(f"data_generator -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
+                print(f"batch_X: {batch_X[0].flatten()}")
+                print(f"batch_Y: {batch_Y[0].flatten()}")
+                
                 yield batch_X, batch_Y
             
 @click.command()
 @click.option('--folder-read', type=str, default='./datos_npz/', help="Folder where the data is stored.")
 
 def main(folder_read: str) -> None:
+    banc = "banc_1.csv"
+    
     file_paths = [os.path.join(folder_read, f) for f in os.listdir(folder_read)]
+    file_paths = [f for f in file_paths if banc in f]
+    print(f"File paths: {file_paths}")
+    
+    
     augmentations = ['add_noise']
     batch_size = 32
     window_size = 32
@@ -93,6 +102,7 @@ def main(folder_read: str) -> None:
             tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(32,1)),
             tf.keras.layers.LSTM(64, return_sequences=True),
             tf.keras.layers.LSTM(32, return_sequences=True),
+            tf.keras.layers.LSTM(32, return_sequences=False),
             tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(20),
             tf.keras.layers.Dense(n_outputs)
@@ -101,8 +111,8 @@ def main(folder_read: str) -> None:
     print("LSTM model")
     lstm_model.summary()
     metrics_lstm = [tf.metrics.MeanAbsoluteError()]
-    lstm_model.compile(optimizer='adam', loss='mae', metrics=metrics_lstm)
-    checkpoint_filepath_lstm = f'../weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
+    lstm_model.compile(optimizer='adam', loss='mse', metrics=metrics_lstm)
+    checkpoint_filepath_lstm = f'../weights/model_lstm{banc}_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.10f}}.weights.h5'
     checkpoint_callback_lstm = ModelCheckpoint(
         checkpoint_filepath_lstm,
         monitor='loss',
@@ -112,7 +122,7 @@ def main(folder_read: str) -> None:
         verbose=1
     )
 
-    num_epochs = 50
+    num_epochs = 25
     print("Training")
     train_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
     
@@ -123,7 +133,7 @@ def main(folder_read: str) -> None:
         print(f"Training batch -> batch_X shape: {batch_X.shape}, batch_Y shape: {batch_Y.shape}")
         break
 
-    lstm_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_lstm])
+    history = lstm_model.fit(train_gen, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint_callback_lstm])
 
     print("Evaluation")
     test_gen = data_generator(file_paths, batch_size, window_size, n_outputs, augmentations)
@@ -141,17 +151,26 @@ def main(folder_read: str) -> None:
     # Reshape the input to have the correct shape for LSTM model prediction
     dummy = testX[0].reshape((1, 32, 1))  # (1, sequence_length, 1)
 
-
     print(f"TestX: {testX[0].flatten()}")
     print(f"TestX shape: {testX[0].shape}")
     print(f"dummy: {dummy.flatten()}")
     print(f"dummy shape: {dummy.shape}")
 
-    prediction_lstm = lstm_model.predict(dummy)
+    prediction_lstm = lstm_model.predict(dummy)  # (1, n_outputs)
     prediction_lstm = prediction_lstm.flatten()  # Flatten the prediction to match true values shape
 
     print(f"LSTM model prediction: {prediction_lstm}")
     print(f"True: {testY[0]}")
+    
+    print(f"loss history: {history.history['loss']}")
+    
+    ## print model loss progression
+    plt.plot(history.history['loss'])
+    plt.title('Model loss: '+ banc)
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.show()
+    
 
     return None
 

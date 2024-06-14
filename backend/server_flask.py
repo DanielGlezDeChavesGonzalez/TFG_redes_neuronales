@@ -15,65 +15,40 @@ r = redis.Redis(host='redis', port=6379, db=0)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
+# model = tf.keras.Sequential([
+#         tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(32,1)),
+#         tf.keras.layers.Conv1D(32, 2, activation='relu'),
+#         tf.keras.layers.MaxPooling1D(2),
+#         tf.keras.layers.Conv1D(64, 2, activation='relu'),
+#         tf.keras.layers.Conv1D(64, 2, activation='relu'),
+#         tf.keras.layers.MaxPooling1D(2),
+#         tf.keras.layers.Conv1D(128, 2, activation='relu'),
+#         tf.keras.layers.Conv1D(32, 2, activation='relu'),
+#         # tf.keras.layers.# MaxPooling1D(2),
+#         tf.keras.layers.Conv1D(200, 2, activation='relu'),
+#         # tf.keras.layers.# MaxPooling1D(2),
+#         tf.keras.layers.Flatten(),
+#         tf.keras.layers.Dense(100),
+#         tf.keras.layers.Dense(5)
+#     ])
+
 model = tf.keras.Sequential([
-            tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(32,1)),
-            tf.keras.layers.Conv1D(32, 2, activation='relu'),
-            tf.keras.layers.MaxPooling1D(2),
-            tf.keras.layers.Conv1D(64, 2, activation='relu'),
-            tf.keras.layers.Conv1D(64, 2, activation='relu'),
-            tf.keras.layers.MaxPooling1D(2),
-            tf.keras.layers.Conv1D(128, 2, activation='relu'),
-            tf.keras.layers.Conv1D(32, 2, activation='relu'),
-            # tf.keras.layers.# MaxPooling1D(2),
-            tf.keras.layers.Conv1D(200, 2, activation='relu'),
-            # tf.keras.layers.# MaxPooling1D(2),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(100),
+            tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(32,1)),
+            tf.keras.layers.LSTM(64, return_sequences=True),
+            tf.keras.layers.LSTM(32, return_sequences=True),
+            tf.keras.layers.LSTM(32, return_sequences=False),
+            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dense(20),
             tf.keras.layers.Dense(5)
         ])
+
+# model = tf.keras.Sequential([
+#             tf.keras.layers.Flatten(input_shape=(32, 1)),
+#             tf.keras.layers.Dense(64, activation='relu'),
+#             tf.keras.layers.Dense(64, activation='relu'),
+#             tf.keras.layers.Dense(5)
+#         ])
         
-# def load_best_model (num_outputs = 5):
-    
-#     # checkpoint_filepath_lstm = f'./weights/model_lstm_modelversion_{model_version}_outputs_{n_outputs}_{{loss:.4f}}.weights.h5'
-    
-#     best_model_path = ""
-#     current_loss = 1000000
-#     global model
-#     paths_outputs = []
-    
-#     for file in os.listdir("..\weights"):
-#         if file.split("_")[5] == str(num_outputs):
-#             paths_outputs.append(file)
-        
-#     for file in paths_outputs:
-#         loss = file.split("_")[6].split(".weights")[0]
-#         if float(loss) < current_loss:
-#             current_loss = float(loss)
-#             best_model_path = os.path.join("..\weights", file)
-    
-#     print(best_model_path)
-#     # print("------------------------------------")
-    
-#     if best_model_path == "":
-#         raise ValueError(f"Model file not found")
-    
-#     # print(tf.__version__)
-#     # print(keras.__version__)
-#     best_model_type = best_model_path.split("_")[1]
-#     if  best_model_type== "lstm":
-#         model = Lstm_model(num_outputs)
-#     elif best_model_type == "conv":
-#         model = Conv1D_model(num_outputs).model
-#     elif best_model_type == "dense":
-#         model = Dense_model(num_outputs)
-#     else:
-#         raise ValueError(f"Unrecognized model type in file name: {best_model_path}")
-    
-#     # print de los pesos del modelo
-#     # print(model.model.get_weights())  
-            
-#     return model    
-    
 
 def process_task_queue():
     while True:
@@ -176,7 +151,7 @@ def run_task_queue_worker():
 def main(num_output : int) -> None:
     print("* Loading Keras model and Flask starting server...")
     print("Please wait until the server has fully started")
-    path_model = "model_conv1d_modelversion_1_outputs_5_0.0799928010.weights.h5"
+    path_model = "model_lstmbanc_1.csv_modelversion_1_outputs_5_0.0100342305.weights.h5"
     # load_best_model(num_output)
    
     model.load_weights(path_model)
